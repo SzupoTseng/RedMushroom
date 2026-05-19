@@ -8,6 +8,7 @@ import {
   getMyReport,
 } from '../controllers/quizController';
 import { listDue, reviewMonster } from '../controllers/errorMonsterController';
+import { getLeaderboard } from '../controllers/leaderboardController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -25,5 +26,8 @@ router.get('/session/:sessionId', getSessionResult);
 // 錯題怪獸（S11B）
 router.get('/monsters', listDue);
 router.post('/monsters/review', reviewMonster);
+
+// 班級英雄榜（S12D）
+router.get('/leaderboard', getLeaderboard);
 
 export default router;
