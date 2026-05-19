@@ -1,4 +1,3 @@
-import React from 'react';
 import { useSenLayout } from '../../context/ConfigContext';
 
 interface Props {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 interface Props {
