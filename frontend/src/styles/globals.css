@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Noto Sans TC', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-gradient-to-br from-red-50 to-orange-50 min-h-screen;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply min-h-[44px] min-w-[44px] px-6 py-3 bg-mushroom-500 text-white font-bold
+           rounded-2xl shadow-lg hover:bg-mushroom-600 active:scale-95
+           transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .btn-secondary {
+    @apply min-h-[44px] px-6 py-3 bg-white text-mushroom-600 font-bold border-2
+           border-mushroom-300 rounded-2xl hover:bg-mushroom-50 active:scale-95
+           transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .card {
+    @apply bg-white rounded-3xl shadow-md p-6;
+  }
+
+  .answer-btn {
+    @apply w-full min-h-[56px] text-left px-5 py-3 rounded-2xl border-2 border-gray-200
+           text-lg font-semibold hover:border-mushroom-400 hover:bg-mushroom-50
+           active:scale-[0.98] transition-all duration-150 cursor-pointer select-none;
+  }
+
+  .answer-btn-correct {
+    @apply border-green-400 bg-green-50 text-green-700;
+  }
+
+  .answer-btn-wrong {
+    @apply border-red-400 bg-red-50 text-red-600;
+  }
+}

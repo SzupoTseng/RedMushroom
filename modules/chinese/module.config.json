@@ -1,0 +1,17 @@
+{
+  "subject": "chinese",
+  "displayName": "國語文",
+  "displayNameI18n": {
+    "zh-TW": "國語文",
+    "en": "Chinese Language",
+    "ja": "国語",
+    "ko": "국어"
+  },
+  "icon": "🍄",
+  "color": "#ef4444",
+  "theoryTypes": ["cognitive", "input", "usage", "sociocultural"],
+  "questionTypes": ["single_choice", "sorting"],
+  "gradeLevels": ["3", "4"],
+  "isActive": true,
+  "description": "國小 3-4 年級國語文學習模組，涵蓋認知、輸入、運用、社文四大主題。"
+}

@@ -1,0 +1,16 @@
+.env
+*.db
+*.db-shm
+*.db-wal
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
+*.log
+.env.local
+.env.*.local
+frontend/dist/
+backend/dist/
+coverage/
+playwright-report/
+test-results/

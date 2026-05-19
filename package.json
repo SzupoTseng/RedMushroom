@@ -1,0 +1,26 @@
+{
+  "name": "redmushroom",
+  "version": "1.0.0",
+  "description": "RedMushroom（紅蘑菇）— 國小中文數位課程系統",
+  "private": true,
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "build": "npm run build --prefix frontend && npm run build --prefix backend",
+    "test:e2e": "npx playwright test",
+    "test:child": "npx tsx tests/ai-child-tester.ts",
+    "test:child:batch": "npx tsx tests/ai-child-tester.ts --batch 50 --random-persona",
+    "seed:questions": "npx tsx scripts/generate-questions.ts",
+    "seed:praise": "npx tsx scripts/seed-praise-library.ts"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.43.0",
+    "tsx": "^4.10.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
