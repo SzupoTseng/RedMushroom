@@ -83,3 +83,5 @@ desktop.ini
 *.temp
 *.bak
 *.orig
+scripts/node_modules
+scripts/package-lock.json
