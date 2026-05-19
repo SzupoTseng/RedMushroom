@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --project tsconfig.json",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -29,6 +30,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/uuid": "^9.0.8",
     "tsx": "^4.10.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^4.1.6"
   }
 }

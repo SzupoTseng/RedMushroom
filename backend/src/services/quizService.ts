@@ -257,7 +257,14 @@ export class QuizService {
 
   private pickPraise(userId: number, passed: boolean): string {
     const db = this.db;
-    const scenario = passed ? 'passed' : 'failed_encouragement';
+
+    const user = db
+      .prepare('SELECT is_sen_mode FROM users WHERE user_id = ?')
+      .get(userId) as { is_sen_mode: number } | undefined;
+
+    const scenario = user?.is_sen_mode
+      ? 'sen_encouragement'
+      : passed ? 'passed' : 'failed_encouragement';
 
     // 排除最近 20 次使用過的讚美
     const recentIds = (
