@@ -9,6 +9,7 @@ import {
 } from '../controllers/quizController';
 import { listDue, reviewMonster } from '../controllers/errorMonsterController';
 import { getLeaderboard } from '../controllers/leaderboardController';
+import { classmates as pvpClassmates, createChallenge as pvpCreateChallenge } from '../controllers/pvpController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -29,5 +30,9 @@ router.post('/monsters/review', reviewMonster);
 
 // 班級英雄榜（S12D）
 router.get('/leaderboard', getLeaderboard);
+
+// PvP 競技場（S12B）
+router.get('/pvp/classmates', pvpClassmates);
+router.post('/pvp/challenge', pvpCreateChallenge);
 
 export default router;
