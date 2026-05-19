@@ -9,6 +9,7 @@ import Result from './pages/Result';
 import Admin from './pages/Admin';
 import StudentDashboard from './pages/StudentDashboard';
 import SubjectSelector from './pages/SubjectSelector';
+import ErrorMonsterReview from './pages/ErrorMonsterReview';
 import BiBoFloatingSprite from './components/common/BiBoFloatingSprite';
 
 function AppRoutes() {
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/result" element={<Result />} />
         <Route path="/dashboard" element={<StudentDashboard />} />
+        <Route path="/monsters" element={<ErrorMonsterReview />} />
         {(user.role === 'teacher') && (
           <Route path="/admin" element={<Admin />} />
         )}

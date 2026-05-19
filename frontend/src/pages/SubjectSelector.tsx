@@ -94,6 +94,34 @@ export default function SubjectSelector() {
           </button>
         ))}
       </div>
+
+      {/* 額外功能 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+        <button
+          onClick={() => navigate('/monsters')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-transparent"
+        >
+          <div className="text-3xl mb-1">🐲</div>
+          <div className="font-black text-gray-800">錯題怪獸</div>
+          <div className="text-xs text-gray-500 mt-1">複習做錯過的題目</div>
+        </button>
+        <button
+          onClick={() => navigate('/leaderboard')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-transparent"
+        >
+          <div className="text-3xl mb-1">🏆</div>
+          <div className="font-black text-gray-800">班級英雄榜</div>
+          <div className="text-xs text-gray-500 mt-1">看看同學的努力</div>
+        </button>
+        <button
+          onClick={() => navigate('/pvp')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-transparent"
+        >
+          <div className="text-3xl mb-1">⚔️</div>
+          <div className="font-black text-gray-800">挑戰過去的自己</div>
+          <div className="text-xs text-gray-500 mt-1">PvP 競技場</div>
+        </button>
+      </div>
     </div>
   );
 }
