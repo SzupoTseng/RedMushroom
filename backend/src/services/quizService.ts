@@ -153,6 +153,11 @@ export class QuizService {
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(sessionId, questionId, userAnswer, isCorrect, speechText ?? null, speechScore ?? null);
 
+    // 語音相似度 ≥ 70% 且答對：額外 +5 XP
+    if (isCorrect === 1 && speechScore !== undefined && speechScore >= 70) {
+      db.prepare(`UPDATE users SET total_exp = total_exp + 5 WHERE user_id = ?`).run(userId);
+    }
+
     // 錯題怪獸：每次答題後更新間隔重複狀態
     new ErrorMonsterService().onAnswered(userId, questionId, isCorrect === 1);
 

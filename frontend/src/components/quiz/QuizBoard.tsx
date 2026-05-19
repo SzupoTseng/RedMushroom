@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuiz } from '../../context/QuizContext';
 import SortingDisplay from './SortingDisplay';
+import SpeechRecorder from './SpeechRecorder';
 import { useConfig, useSenLayout } from '../../context/ConfigContext';
 import type { ZhuyinChar } from '../../types';
 
@@ -11,6 +12,7 @@ export default function QuizBoard() {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [coolingDown, setCoolingDown] = useState(false);
+  const [speechResult, setSpeechResult] = useState<{ score: number; text: string } | null>(null);
 
   const { questions, currentIndex } = state;
   const question = questions[currentIndex];
@@ -25,7 +27,7 @@ export default function QuizBoard() {
     setSubmitted(true);
     setCoolingDown(true);
 
-    await submitAnswer(question.question_id, answer);
+    await submitAnswer(question.question_id, answer, speechResult ?? undefined);
 
     // 短暫延遲讓使用者看到正確/錯誤反饋，再推進題目。
     // SEN 模式使用 1800ms（含防誤觸 cool-down），一般模式使用 1200ms。
@@ -33,6 +35,7 @@ export default function QuizBoard() {
       setSelected(null);
       setSubmitted(false);
       setCoolingDown(false);
+      setSpeechResult(null);
       if (isLast) {
         await finishQuiz();
       } else {
@@ -81,6 +84,14 @@ export default function QuizBoard() {
             )
           )}
         </div>
+
+        {question.question_type === 'single_choice' && (
+          <SpeechRecorder
+            target={question.content.map((c: ZhuyinChar) => c.char).join('')}
+            onResult={(score, text) => setSpeechResult({ score, text })}
+            disabled={submitted}
+          />
+        )}
 
         {question.question_type === 'sorting' ? (
           <SortingDisplay question={question} onConfirm={handleSelect} disabled={submitted} />

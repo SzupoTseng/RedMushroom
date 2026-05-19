@@ -91,7 +91,11 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
 interface QuizContextValue {
   state: QuizState;
   startQuiz: (theory_type: TheoryType, subject?: string) => Promise<void>;
-  submitAnswer: (question_id: number, answer: string) => Promise<void>;
+  submitAnswer: (
+    question_id: number,
+    answer: string,
+    speech?: { score: number; text: string }
+  ) => Promise<void>;
   nextQuestion: () => void;
   finishQuiz: () => Promise<void>;
   resetQuiz: () => void;
@@ -138,7 +142,11 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   );
 
   const submitAnswer = useCallback(
-    async (question_id: number, answer: string) => {
+    async (
+      question_id: number,
+      answer: string,
+      speech?: { score: number; text: string }
+    ) => {
       if (!state.sessionId) return;
       dispatch({ type: 'SET_PHASE', payload: 'SUBMITTING' });
       try {
@@ -148,6 +156,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
             session_id: state.sessionId,
             question_id,
             user_answer: answer,
+            speech_text: speech?.text,
+            speech_score: speech?.score,
           }),
         });
         const data = await res.json() as SubmitAnswerResponse;
