@@ -1,4 +1,5 @@
 import { getDb } from '../db/database';
+import { ErrorMonsterService } from './errorMonsterService';
 
 interface QuestionRow {
   question_id: number;
@@ -150,6 +151,9 @@ export class QuizService {
       `INSERT INTO quiz_details (session_id, question_id, user_answer, is_correct, speech_text, speech_score)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(sessionId, questionId, userAnswer, isCorrect, speechText ?? null, speechScore ?? null);
+
+    // 錯題怪獸：每次答題後更新間隔重複狀態
+    new ErrorMonsterService().onAnswered(userId, questionId, isCorrect === 1);
 
     return { is_correct: isCorrect === 1, explanation: question.explanation };
   }
