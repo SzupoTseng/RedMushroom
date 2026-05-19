@@ -7,6 +7,7 @@ import {
   getSubjects,
   getMyReport,
 } from '../controllers/quizController';
+import { listDue, reviewMonster } from '../controllers/errorMonsterController';
 import { authMiddleware } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -20,5 +21,9 @@ router.post('/start', startQuiz);
 router.post('/answer', submitAnswer);
 router.post('/finish', finishQuiz);
 router.get('/session/:sessionId', getSessionResult);
+
+// 錯題怪獸（S11B）
+router.get('/monsters', listDue);
+router.post('/monsters/review', reviewMonster);
 
 export default router;
