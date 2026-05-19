@@ -10,6 +10,7 @@ import Admin from './pages/Admin';
 import StudentDashboard from './pages/StudentDashboard';
 import SubjectSelector from './pages/SubjectSelector';
 import ErrorMonsterReview from './pages/ErrorMonsterReview';
+import Leaderboard from './pages/Leaderboard';
 import BiBoFloatingSprite from './components/common/BiBoFloatingSprite';
 
 function AppRoutes() {
@@ -41,6 +42,7 @@ function AppRoutes() {
         <Route path="/result" element={<Result />} />
         <Route path="/dashboard" element={<StudentDashboard />} />
         <Route path="/monsters" element={<ErrorMonsterReview />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         {(user.role === 'teacher') && (
           <Route path="/admin" element={<Admin />} />
         )}
