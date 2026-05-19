@@ -1,5 +1,6 @@
 import { getDb } from '../db/database';
 import { ErrorMonsterService } from './errorMonsterService';
+import { StreakRewardService } from './streakRewardService';
 
 interface QuestionRow {
   question_id: number;
@@ -165,6 +166,8 @@ export class QuizService {
     praise: string;
     level_up: boolean;
     new_level: number;
+    streak_days: number;
+    reward: { name: string; type: 'title' | 'pet_skin' } | null;
   } {
     const db = this.db;
 
@@ -210,8 +213,9 @@ export class QuizService {
     // RPG 經驗值更新
     const { expGained, levelUp, newLevel } = this.updateExp(userId, totalScore, isPassed === 1);
 
-    // 連勝更新
-    this.updateStreak(userId, isPassed === 1);
+    // 連勝更新（回傳更新後的天數，給寶箱解鎖判斷使用）
+    const newStreak = this.updateStreak(userId, isPassed === 1);
+    const reward = new StreakRewardService().unlockIfMilestone(userId, newStreak);
 
     // 更新五維度統計
     this.updateUserStats(userId);
@@ -226,6 +230,8 @@ export class QuizService {
       praise,
       level_up: levelUp,
       new_level: newLevel,
+      streak_days: newStreak,
+      reward,
     };
   }
 
@@ -329,9 +335,14 @@ export class QuizService {
     return { expGained, levelUp, newLevel };
   }
 
-  private updateStreak(userId: number, passed: boolean): void {
+  private updateStreak(userId: number, passed: boolean): number {
     const db = this.db;
-    if (!passed) return;
+    if (!passed) {
+      const cur = db
+        .prepare('SELECT streak_days FROM users WHERE user_id = ?')
+        .get(userId) as { streak_days: number } | undefined;
+      return cur?.streak_days ?? 0;
+    }
 
     const user = db
       .prepare('SELECT last_quiz_date, streak_days, max_streak FROM users WHERE user_id = ?')
@@ -345,13 +356,20 @@ export class QuizService {
       const diff = Math.floor(
         (new Date(today).getTime() - new Date(last).getTime()) / 86400000
       );
-      newStreak = diff === 1 ? user.streak_days + 1 : 1;
+      if (diff === 0) {
+        newStreak = user.streak_days; // 同一天再答一場：不重複增加
+      } else if (diff === 1) {
+        newStreak = user.streak_days + 1;
+      } else {
+        newStreak = 1;
+      }
     }
 
     const maxStreak = Math.max(user.max_streak, newStreak);
     db.prepare(
       `UPDATE users SET last_quiz_date = ?, streak_days = ?, max_streak = ? WHERE user_id = ?`
     ).run(today, newStreak, maxStreak, userId);
+    return newStreak;
   }
 
   private updateUserStats(userId: number): void {

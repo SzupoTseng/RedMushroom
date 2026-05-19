@@ -96,6 +96,8 @@ export interface FinishQuizResponse {
   praise: string;
   level_up: boolean;
   new_level: number;
+  streak_days: number;
+  reward: { name: string; type: 'title' | 'pet_skin' } | null;
 }
 
 export interface AuthResponse {
