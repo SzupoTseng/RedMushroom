@@ -65,6 +65,8 @@ export interface QuizState {
   praise: string | null;
   levelUp: boolean;
   newLevel: number | null;
+  streakDays: number;
+  reward: { name: string; type: 'title' | 'pet_skin' } | null;
   error: string | null;
 }
 

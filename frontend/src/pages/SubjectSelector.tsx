@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import StreakFire from '../components/common/StreakFire';
 import { useTranslation } from '../i18n';
 import type { TheoryType } from '../types';
 
@@ -38,8 +39,11 @@ export default function SubjectSelector() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-black text-mushroom-600">🍄 RedMushroom</h1>
-          <p className="text-gray-500 text-sm">
-            {user?.is_sen_mode ? '🌟 輕鬆學習模式' : `Lv.${user?.current_level} · ${user?.display_name}`}
+          <p className="text-gray-500 text-sm flex items-center gap-2">
+            {user?.is_sen_mode
+              ? <>🌟 輕鬆學習模式</>
+              : <>Lv.{user?.current_level} · {user?.display_name}</>}
+            <StreakFire days={user?.streak_days ?? 0} />
           </p>
         </div>
         <div className="flex items-center gap-2">

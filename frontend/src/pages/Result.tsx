@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext';
 import ScoreModal from '../components/quiz/ScoreModal';
+import TreasureChestModal from '../components/common/TreasureChestModal';
 
 export default function Result() {
   const { state, resetQuiz } = useQuiz();
   const navigate = useNavigate();
+  const [chestOpen, setChestOpen] = useState(true);
 
   useEffect(() => {
     if (state.phase !== 'RESULT') {
@@ -29,6 +31,13 @@ export default function Result() {
         answers={state.answers}
         onRetry={() => { resetQuiz(); navigate('/'); }}
       />
+
+      {state.reward && chestOpen && (
+        <TreasureChestModal
+          reward={state.reward}
+          onClose={() => setChestOpen(false)}
+        />
+      )}
     </div>
   );
 }

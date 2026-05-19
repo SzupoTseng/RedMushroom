@@ -12,7 +12,7 @@ type QuizAction =
   | { type: 'QUESTIONS_LOADED'; payload: { session_id: number; questions: Question[] } }
   | { type: 'SUBMIT_ANSWER'; payload: { question_id: number; answer: string; is_correct: boolean } }
   | { type: 'NEXT_QUESTION' }
-  | { type: 'FINISH'; payload: { total_score: number; is_passed: boolean; exp_gained: number; praise: string; level_up: boolean; new_level: number } }
+  | { type: 'FINISH'; payload: { total_score: number; is_passed: boolean; exp_gained: number; praise: string; level_up: boolean; new_level: number; streak_days: number; reward: { name: string; type: 'title' | 'pet_skin' } | null } }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'RESET' };
 
@@ -31,6 +31,8 @@ const initialState: QuizState = {
   praise: null,
   levelUp: false,
   newLevel: null,
+  streakDays: 0,
+  reward: null,
   error: null,
 };
 
@@ -73,6 +75,8 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         praise: action.payload.praise,
         levelUp: action.payload.level_up,
         newLevel: action.payload.new_level,
+        streakDays: action.payload.streak_days,
+        reward: action.payload.reward,
       };
     case 'SET_ERROR':
       return { ...state, phase: 'LOBBY', error: action.payload };
