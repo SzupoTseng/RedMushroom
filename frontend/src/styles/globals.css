@@ -43,4 +43,22 @@
   .answer-btn-wrong {
     @apply border-red-400 bg-red-50 text-red-600;
   }
+
+  /* SEN（輕鬆學習）模式：放大字體與點擊區，單欄展示 */
+  .answer-btn-sen {
+    @apply text-2xl py-6 min-h-[80px] rounded-3xl;
+  }
+
+  .quiz-board-sen {
+    @apply max-w-xl;
+  }
+
+  @keyframes float-bobbing {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  .animate-float {
+    animation: float-bobbing 2.4s ease-in-out infinite;
+  }
 }
