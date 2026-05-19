@@ -108,6 +108,9 @@ success('資料庫建立完成！');
 // ────────────────────────────────────────
 step(4, 5, '填入示範題目與讚美語庫...');
 run('npx tsx scripts/seed-minimal.ts', ROOT);
+run('npx tsx scripts/generate-questions.ts', ROOT);
+run('npx tsx scripts/seed-questions-taiwan.ts', ROOT);
+run('npx tsx scripts/seed-praise-library.ts', ROOT);
 success('示範資料填入完成！');
 
 // ────────────────────────────────────────

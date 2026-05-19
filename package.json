@@ -11,6 +11,7 @@
     "test:child": "npx tsx tests/ai-child-tester.ts",
     "test:child:batch": "npx tsx tests/ai-child-tester.ts --batch 50 --random-persona",
     "seed:questions": "npx tsx scripts/generate-questions.ts",
+    "seed:tw": "npx tsx scripts/seed-questions-taiwan.ts",
     "seed:praise": "npx tsx scripts/seed-praise-library.ts"
   },
   "dependencies": {
