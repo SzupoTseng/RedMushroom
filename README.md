@@ -36,10 +36,10 @@
 
 - 🧠 **4 Learning Theories**: Cognitive, Input, Usage, Sociocultural — every quiz exercises a single theory.
 - 📚 **~1,500 Chinese + 32 Math Questions**: 32-template matrix (4 theory × 8 category × prompt variants) + 57 Taiwan-localised seeds + 32 hand-crafted math problems in Taiwan contexts (NTD, 坪, YouBike, 健保 etc.).
-- 🎲 **Stratified Sampling**: Each 10-question quiz draws from all 8 life-context categories so no two questions feel identical.
+- 🎲 **Stratified Sampling + 6h No-Repeat**: Each 10-question quiz draws from all 8 life-context categories, AND skips any question the same user has already answered in the last 6 hours.
 - 🎮 **RPG Progress System**: EXP, levels, win streaks, Grammar Sprite pet that evolves with theory-specific XP.
 - 🔥 **Daily Streak Rewards**: Treasure chest auto-unlocks at 7 / 14 / 30 days (title / pet skin).
-- 🐲 **Error Monsters**: SM-2-lite spaced repetition (6h / 24h / 72h / 168h / 336h intervals; 3 consecutive corrects "purifies" the monster).
+- 🐲 **Error Monsters**: SM-2-lite spaced repetition (**1h** / 24h / 72h / 168h / 336h intervals; 3 consecutive corrects "purifies"). Newly-trapped monsters appear in the review list within an hour and are marked **🟢 現在可複習** vs **⏳ 等待 N 分鐘** so kids see instant feedback after a wrong answer.
 - ⚔️ **Async PvP Arena**: Challenge the median of your own past 5 sessions — race yesterday's you, not your classmates.
 - 🏆 **Class Hero Leaderboard**: Classmates' names privacy-masked to first-character + 同學 (e.g. 「林同學」).
 - 🎤 **Speech Bonus XP**: Web Speech API (zh-TW); +5 XP for ≥70% Dice-bigram similarity on read-aloud.
@@ -312,7 +312,7 @@ All routes under `/api/quiz/*` and `/api/admin/*` require `Authorization: Bearer
 | POST | `/api/quiz/answer` | `{session_id, question_id, user_answer, speech_text?, speech_score?}` → `{is_correct, explanation}`. Updates error-monster state; +5 XP if speech ≥ 70%. |
 | POST | `/api/quiz/finish` | `{session_id}` → final score, level-up flag, praise, streak_days, reward (or null) |
 | GET | `/api/quiz/session/:id` | Full session with all answers (for Result page + PvP comparison) |
-| GET | `/api/quiz/monsters` | Due error monsters (≤ 20, `next_review_time ≤ now`) |
+| GET | `/api/quiz/monsters` | All active error monsters (≤ 20), each with `is_due: boolean` indicating whether `next_review_time` has passed. Due ones come first. |
 | POST | `/api/quiz/monsters/review` | `{question_id, user_answer}` → updates SM-2 streak |
 | GET | `/api/quiz/leaderboard` | Class ranking; non-self names masked to first-char + 同學 |
 | GET | `/api/quiz/pvp/classmates` | Same class peers (no full names exposed) |
@@ -354,9 +354,13 @@ The Chinese question bank is **generated**, not hand-written.
 - `scripts/questions/matrix.ts` — Cross-joins `data` × `vars`, picks a prompt by `rowIdx % prompts.length`.
 - `scripts/questions/zhuyin.ts` — Char → 注音 lookup; unknown chars get empty pinyin (acceptable).
 
-#### Stratified Sampling at Quiz Time
+#### Stratified Sampling + 6h No-Repeat at Quiz Time
 
 `quizService.getBucketsByCategory(subject, theory_type)` caches questions grouped by `category_type` (5-min TTL). `pickDiverseQuestions(buckets, count)` round-robins picks across all 8 buckets, so a normal quiz spans 8 categories and a SEN quiz spans 5 — eliminating the "all 10 questions feel the same" problem.
+
+On top of that, `getRecentlySeenIds(userId, hours=6)` returns the set of distinct `question_id`s the user has answered in the last 6 hours (joined `quiz_details` ↔ `quiz_sessions`). The buckets are filtered by this set before sampling. If the filtered pool falls below the required count (e.g. a brand-new theory with very few questions), it falls back to the full bucket so the user never sees a "題庫不足" error.
+
+This means: **back-to-back quizzes by the same student show genuinely different questions** until at least 6 hours have passed.
 
 #### Adding More Questions
 
@@ -618,10 +622,10 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 
 - 🧠 **四大學習主題**：語詞認知、語言輸入、語言運用、社文語境；每場測驗鎖定單一主題。
 - 📚 **約 1500 道國語文題目 + 32 道數學題目**：32 模板矩陣（4 主題 × 8 類別 × 多句型）+ 57 道臺灣在地化題目 + 32 道手寫的臺灣情境數學題（新臺幣、坪、YouBike、健保）。
-- 🎲 **分層抽題**：每場 10 題從 8 個生活情境輪流抽，不會出現 10 題長一樣的狀況。
+- 🎲 **分層抽題 + 6 小時不重複**：每場 10 題從 8 個生活情境輪流抽；同一使用者過去 6 小時內答過的題目，下一場不會再出現。
 - 🎮 **RPG 成長系統**：經驗值、等級、連勝、文法小精靈寵物（依四主題 XP 進化）。
 - 🔥 **每日連勝寶箱**：7／14／30 天自動解鎖獎勵（稱號／寵物造型）。
-- 🐲 **錯題怪獸**：SM-2-lite 間隔重複（6h／24h／72h／168h／336h；連續答對 3 次「淨化」）。
+- 🐲 **錯題怪獸**：SM-2-lite 間隔重複（**1h**／24h／72h／168h／336h；連續答對 3 次「淨化」）。剛被抓到的怪獸 1 小時內就會出現在複習頁，用 **🟢 現在可複習** vs **⏳ 等待 N 分鐘** 區分狀態，打錯立刻有反饋。
 - ⚔️ **班級競技場**：挑戰過去 5 場自己的中位數——挑戰昨天的你，而不是同學。
 - 🏆 **班級英雄榜**：同學姓名隱碼成「首字＋同學」（如「林同學」）保護隱私。
 - 🎤 **語音加分**：Web Speech API（zh-TW）；唸題相似度 ≥70% 答對 +5 XP。
@@ -894,7 +898,7 @@ HTTP 請求
 | POST | `/api/quiz/answer` | `{session_id, question_id, user_answer, speech_text?, speech_score?}` → `{is_correct, explanation}`，更新錯題怪獸狀態；語音相似度 ≥70% 答對 +5 XP |
 | POST | `/api/quiz/finish` | `{session_id}` → 總分、升級 flag、讚美、streak_days、reward |
 | GET | `/api/quiz/session/:id` | 完整 session（給 Result 頁 + PvP 比對用） |
-| GET | `/api/quiz/monsters` | 到期錯題怪獸（≤ 20 個） |
+| GET | `/api/quiz/monsters` | 所有 active 錯題怪獸（≤ 20 隻），每筆帶 `is_due` 布林標示。已到複習時間的排前面。 |
 | POST | `/api/quiz/monsters/review` | `{question_id, user_answer}` → 更新 SM-2 streak |
 | GET | `/api/quiz/leaderboard` | 班級排行；非自己的名字隱碼為「首字＋同學」 |
 | GET | `/api/quiz/pvp/classmates` | 同班同學列表 |
@@ -936,9 +940,13 @@ const isPassed = totalScore >= passThreshold;
 - `scripts/questions/matrix.ts` —— 把 `data` × `vars` 做笛卡兒積，並用 `rowIdx % prompts.length` 挑句型
 - `scripts/questions/zhuyin.ts` —— 字符→注音對照；查不到的字注音空字串（與既有 seed 一致）
 
-#### 抽題時的分層採樣
+#### 抽題時的分層採樣 + 6 小時不重複
 
 `quizService.getBucketsByCategory(subject, theory_type)` 把題目依 `category_type` 分桶並快取（5 分鐘 TTL）。`pickDiverseQuestions(buckets, count)` 從 8 個桶輪流挑——一般測驗的 10 題會橫跨全 8 類別、SEN 測驗的 5 題會橫跨 5 類別，從根源消除「10 題長一樣」的痛點。
+
+再加一層：`getRecentlySeenIds(userId, hours=6)` 從 `quiz_details` ↔ `quiz_sessions` join 出該使用者最近 6 小時答過的 `question_id` 集合，先把桶過濾掉，再做分層抽題。如果過濾後不夠抽（例如某主題題庫超少），就回退到完整桶——確保使用者不會看到「題庫不足」。
+
+**效果：同一個學生連跑兩場測驗，第二場一定不會出現第一場任何題目**——直到至少過了 6 小時。
 
 #### 加更多題
 
