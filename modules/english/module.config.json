@@ -1,0 +1,17 @@
+{
+  "subject": "english",
+  "displayName": "英語",
+  "displayNameI18n": {
+    "zh-TW": "英語",
+    "en": "English",
+    "ja": "英語",
+    "ko": "영어"
+  },
+  "icon": "🅰️",
+  "color": "#3b82f6",
+  "theoryTypes": ["cognitive", "input", "usage", "sociocultural"],
+  "questionTypes": ["single_choice", "sorting"],
+  "gradeLevels": ["3", "4"],
+  "isActive": false,
+  "description": "預留模組 — 國小英語題庫尚未實作。歡迎提 PR：複製 modules/chinese 結構並參考 scripts/questions/templates.ts 改寫題目模板，於 questions 表 subject 欄填 'english'。"
+}

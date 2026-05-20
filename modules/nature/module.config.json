@@ -1,0 +1,17 @@
+{
+  "subject": "nature",
+  "displayName": "自然",
+  "displayNameI18n": {
+    "zh-TW": "自然",
+    "en": "Science",
+    "ja": "理科",
+    "ko": "과학"
+  },
+  "icon": "🌱",
+  "color": "#22c55e",
+  "theoryTypes": ["cognitive", "input", "usage", "sociocultural"],
+  "questionTypes": ["single_choice", "sorting"],
+  "gradeLevels": ["3", "4"],
+  "isActive": false,
+  "description": "預留模組 — 國小自然題庫尚未實作。建議題型：植物動物分類（cognitive）、實驗步驟排序（usage sorting）、節氣與本地生態（sociocultural）。"
+}
