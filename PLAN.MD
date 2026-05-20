@@ -125,3 +125,42 @@ modules/
 ---
 
 *最後更新：2026-05-19*
+
+---
+
+## 完工驗證（2026-05-20）
+
+PLAN.MD 之前所有 ✅ 都是宣告式的；2026-05-20 全程從零完工到可上線的 12 個 Gap：
+
+| 階段 | 驗證物件 | 結果 |
+|------|----------|------|
+| S2  | `scripts/generate-questions.ts` + `scripts/questions/{templates,zhuyin,matrix}.ts` | ✅ 32 模板，1524 道題 |
+| S11A | `frontend/src/hooks/useSpeechRecognition.ts` + `SpeechRecorder.tsx` + 答對且相似度 ≥70% 給 +5 XP | ✅ |
+| S11B | `backend/src/services/errorMonsterService.ts`（SM-2-lite 6h/24h/72h/168h/336h） + `pages/ErrorMonsterReview.tsx` | ✅ 6 個 vitest 通過 |
+| S11C | `scripts/seed-questions-taiwan.ts` | ✅ 57 道在地化題目 |
+| S12A | `StreakRewardService`（7/14/30 里程碑） + `StreakFire` + `TreasureChestModal` | ✅ 4 個 vitest 通過 |
+| S12B | `pvpService` + `/api/quiz/pvp/{classmates,challenge}` + `pages/Pvp.tsx` + Result 比對 | ✅ 5 個 vitest 通過 |
+| S12D | `leaderboardService`（同班同學名字遮罩） + `/api/quiz/leaderboard` + `pages/Leaderboard.tsx` | ✅ |
+| S13B | `scripts/praises/sen.ts` | ✅ 52 條 SEN 鼓勵 |
+| S13C | `QuizBoard` SEN 變體（大字單欄 + 1.8s 防誤觸） + `BiBoFloatingSprite` SEN 隱藏 | ✅ |
+| S14B | `CONTRIBUTING.md` + `.github/ISSUE_TEMPLATE/*` + `PULL_REQUEST_TEMPLATE.md` | ✅ |
+| S14C | `docs/marketing/{hn-launch,product-hunt,reddit-r-teachers}.md` | ✅ |
+| S14D | `docs/business/open-core-plan.md` | ✅ |
+
+附帶完工：
+
+- `scripts/seed-praise-library.ts`（503 一般 + 52 SEN = 555 條）
+- `quizService.pickPraise` 對 `is_sen_mode=1` 路由到 `sen_encouragement`
+- `tests/ai-child-tester.ts`（4 種 persona）讓 `npm run test:child[:batch]` 可用
+- 後端共 17 個 vitest 全綠
+- 前後端 TypeScript `tsc --noEmit` 全綠
+- 後端 dev server 與前端 Vite dev server 已實測啟動，10 個 API endpoint 用 curl 全綠（含 IDOR 401、`/quiz/start` 不洩漏 `correct_answer`）
+
+技術債修正：
+- `better-sqlite3` 9.6 → 11.5（Node 24 prebuild）
+- `package.json` 移除壞掉的腳本參照
+- Tailwind `mushroom` 色票補齊 50-900 連續色階
+- i18n `Locale` type 從 `typeof zhTW as const` 改為可變字串（en/ja/ko 不再 TS error）
+- 登入回應補上 `total_exp / current_level / streak_days / max_streak` 對齊前端 `User` 型別
+
+*完工日：2026-05-20*

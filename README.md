@@ -14,12 +14,18 @@
 ### Features
 
 - 🧠 **4 Learning Theories**: Cognitive, Input, Usage, Sociocultural
+- 📚 **~1,500 Questions**: 32-template matrix + 57 Taiwan-localised seeds (夜市/捷運/珍奶/節慶)
 - 🎮 **RPG Progress System**: EXP, levels, win streaks, Grammar Sprite pet
+- 🔥 **Daily Streak Rewards**: Treasure chest unlocks at 7 / 14 / 30 days
+- 🐲 **Error Monsters**: SM-2-lite spaced repetition (6h/24h/72h/168h/336h; 3-in-a-row purifies)
+- ⚔️ **Async PvP Arena**: Challenge the median of your own past 5 sessions
+- 🏆 **Class Hero Leaderboard**: Privacy-masked names for classmates
+- 🎤 **Speech Bonus XP**: Web Speech API (zh-TW); +5 XP for ≥70% similarity
 - 📊 **6-Dimension Analytics**: Accuracy, Stability, Breadth, Cognitive, Endurance, Fluency
-- 🌟 **SEN-Friendly Mode**: Easy Learning Mode (5 questions, large font, relaxed scoring)
-- 📱 **QR Code Parent Portal**: Parents scan to view learning progress
+- 🌟 **SEN-Friendly Mode**: Easy Learning Mode (5 questions, large font, 1.8s anti-mistap)
+- 💬 **555-line Praise Library**: 503 general + 52 SEN-specialty, non-repeating (last 20 excluded)
+- 📱 **QR Code Parent Portal**: 5-minute one-time token, no cloud account needed
 - 👩‍🏫 **Teacher Dashboard**: Class overview, PDF reports, CSV export
-- 🏆 **Non-Repeating Praise System**: Context-aware praise selection
 - 🌐 **Multi-language UI**: zh-TW / English / Japanese / Korean
 
 ### Quick Start (zero config, double-click to launch)
@@ -54,11 +60,15 @@ npm start        # Start frontend + backend concurrently
 |-------|-----------|
 | Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
 | Backend | Node.js + Express + TypeScript |
-| Database | SQLite (better-sqlite3, synchronous) |
-| Auth | JWT + bcrypt |
+| Database | SQLite (better-sqlite3 v11, synchronous) |
+| Auth | JWT + bcrypt (rounds=12) |
 | Charts | Recharts (Radar + Bar) |
 | Drag & Drop | @hello-pangea/dnd |
-| Testing | Playwright E2E |
+| Speech | Web Speech API (zh-TW; Chrome/Edge) |
+| PDF | pdfkit |
+| QR Code | qrcode |
+| Unit Tests | vitest (backend services) |
+| E2E Tests | Playwright + AI child tester (4 personas) |
 
 ### Project Structure
 
@@ -78,10 +88,21 @@ RedMushroom/
 
 ### Security
 
-- All SQL queries include `WHERE user_id = ?` to prevent IDOR
-- `/api/quiz/start` never returns `correct_answer`
-- JWT + bcrypt (rounds=12) authentication
-- SEN labels never expose clinical terminology in the UI
+- All SQL queries touching student data include `WHERE user_id = ?` to prevent IDOR
+- `/api/quiz/start` never returns `correct_answer` (verified by Playwright)
+- JWT + bcrypt (rounds=12) authentication; tokens expire in 7 days
+- SEN labels never expose clinical terminology in the UI ("輕鬆學習模式" only)
+- QR-link tokens are UUID v4, one-time use, 5-minute expiry
+- 17 vitest unit tests cover the SEN praise router, error-monster SM-2 scheduler, streak reward idempotence, and PvP weighting
+
+### Developer commands
+
+```bash
+cd backend && npm test           # vitest unit tests
+npm run test:e2e                  # Playwright end-to-end
+npm run test:child                # AI child tester (1 quiz, 4 personas rotating)
+npm run test:child:batch          # 50 quizzes with random personas
+```
 
 ### License
 
@@ -94,12 +115,18 @@ MIT License — Free for use and adaptation in schools worldwide.
 ### 特色功能
 
 - 🧠 **四大學習主題**：語詞認知、語言輸入、語言運用、社文語境
+- 📚 **約 1,500 道題目**：32 模板矩陣 + 57 道臺灣在地化（夜市/捷運/珍奶/節慶）
 - 🎮 **RPG 成長系統**：經驗值、等級、連勝天數、文法小精靈寵物
+- 🔥 **每日連勝寶箱**：7 / 14 / 30 天里程碑自動解鎖獎勵
+- 🐲 **錯題怪獸**：SM-2-lite 間隔重複（6h/24h/72h/168h/336h；連對 3 次淨化）
+- ⚔️ **班級競技場**：挑戰過去 5 場自己的中位數
+- 🏆 **班級英雄榜**：同學名字隱碼（首字＋同學）
+- 🎤 **語音加分**：Web Speech API（zh-TW），相似度 ≥70% 答對 +5 XP
 - 📊 **六維度分析**：準確率、穩定性、廣泛性、認知、耐力、流暢
-- 🌟 **SEN 友善模式**：輕鬆學習模式（5 題、大字體、寬鬆計分）
-- 📱 **QR Code 行動管理**：家長可掃碼查看學習進度
+- 🌟 **SEN 友善模式**：輕鬆學習模式（5 題、大字單欄、1.8 秒防誤觸）
+- 💬 **555 條讚美庫**：503 一般 + 52 SEN 專屬，最近 20 條不重複
+- 📱 **QR Code 行動管理**：5 分鐘一次性 token，零雲端帳號
 - 👩‍🏫 **老師管理台**：班級儀表板、PDF 報告、CSV 匯出
-- 🏆 **防重複讚美系統**：AI 選取適合情境的讚美語
 - 🌐 **多語言介面**：繁中 / 英文 / 日文 / 韓文
 
 ### 快速開始（零設定，雙擊即用）
@@ -134,11 +161,15 @@ npm start        # 同時啟動前後端
 |------|------|
 | 前端 | React 18 + TypeScript + Vite + Tailwind CSS |
 | 後端 | Node.js + Express + TypeScript |
-| 資料庫 | SQLite (better-sqlite3，同步) |
-| 驗證 | JWT + bcrypt |
+| 資料庫 | SQLite (better-sqlite3 v11，同步) |
+| 驗證 | JWT + bcrypt (rounds=12) |
 | 圖表 | Recharts (Radar + Bar) |
 | 拖拉 | @hello-pangea/dnd |
-| 測試 | Playwright E2E |
+| 語音 | Web Speech API（zh-TW；Chrome/Edge） |
+| PDF | pdfkit |
+| QR Code | qrcode |
+| 單元測試 | vitest（後端 services） |
+| E2E 測試 | Playwright + AI 兒童測試員（4 種 persona） |
 
 ### 目錄結構
 
@@ -158,10 +189,21 @@ RedMushroom/
 
 ### 安全設計
 
-- 所有 SQL 查詢帶 `WHERE user_id = ?` 防止 IDOR
-- `/api/quiz/start` 不回傳 `correct_answer`
-- JWT + bcrypt (rounds=12) 認證
-- SEN 標籤不顯示「遲緩」等字眼
+- 所有涉及學生資料的 SQL 帶 `WHERE user_id = ?` 防止 IDOR
+- `/api/quiz/start` 絕不回傳 `correct_answer`（由 Playwright 測試守門）
+- JWT + bcrypt (rounds=12) 認證；Token 7 天到期
+- SEN 標籤前端僅顯示「輕鬆學習模式」，不使用「遲緩 / 特教」等字眼
+- QR Code Token：UUID v4，一次性，5 分鐘到期
+- 17 個 vitest 單元測試守住 SEN 讚美路由、錯題怪獸排程、寶箱解鎖冪等、PvP 加權比對
+
+### 開發者指令
+
+```bash
+cd backend && npm test            # vitest 後端單元測試
+npm run test:e2e                  # Playwright E2E
+npm run test:child                # AI 兒童測試員（1 場，4 種 persona 輪流）
+npm run test:child:batch          # 50 場，隨機 persona
+```
 
 ### 授權
 
