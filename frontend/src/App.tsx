@@ -1,54 +1,65 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { QuizProvider } from './context/QuizContext';
 import { ConfigProvider } from './context/ConfigContext';
-import Home from './pages/Home';
-import Quiz from './pages/Quiz';
-import Result from './pages/Result';
-import Admin from './pages/Admin';
-import StudentDashboard from './pages/StudentDashboard';
-import SubjectSelector from './pages/SubjectSelector';
-import ErrorMonsterReview from './pages/ErrorMonsterReview';
-import Leaderboard from './pages/Leaderboard';
-import Pvp from './pages/Pvp';
 import BiBoFloatingSprite from './components/common/BiBoFloatingSprite';
+
+// Pages are code-split per route. Each becomes its own chunk under dist/assets/,
+// so the initial bundle stays lean (login page only) and authenticated routes
+// load on demand.
+const Home               = lazy(() => import('./pages/Home'));
+const Quiz               = lazy(() => import('./pages/Quiz'));
+const Result             = lazy(() => import('./pages/Result'));
+const Admin              = lazy(() => import('./pages/Admin'));
+const StudentDashboard   = lazy(() => import('./pages/StudentDashboard'));
+const SubjectSelector    = lazy(() => import('./pages/SubjectSelector'));
+const ErrorMonsterReview = lazy(() => import('./pages/ErrorMonsterReview'));
+const Leaderboard        = lazy(() => import('./pages/Leaderboard'));
+const Pvp                = lazy(() => import('./pages/Pvp'));
+
+function Loading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-2xl text-mushroom-500 animate-pulse">🍄 載入中...</div>
+    </div>
+  );
+}
 
 function AppRoutes() {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-2xl text-mushroom-500 animate-pulse">🍄 載入中...</div>
-      </div>
-    );
-  }
+  if (isLoading) return <Loading />;
 
   if (!user) {
     return (
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     );
   }
 
   return (
     <QuizProvider>
       <BiBoFloatingSprite />
-      <Routes>
-        <Route path="/" element={<SubjectSelector />} />
-        <Route path="/quiz" element={<Quiz />} />
-        <Route path="/result" element={<Result />} />
-        <Route path="/dashboard" element={<StudentDashboard />} />
-        <Route path="/monsters" element={<ErrorMonsterReview />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/pvp" element={<Pvp />} />
-        {(user.role === 'teacher') && (
-          <Route path="/admin" element={<Admin />} />
-        )}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/" element={<SubjectSelector />} />
+          <Route path="/quiz" element={<Quiz />} />
+          <Route path="/result" element={<Result />} />
+          <Route path="/dashboard" element={<StudentDashboard />} />
+          <Route path="/monsters" element={<ErrorMonsterReview />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/pvp" element={<Pvp />} />
+          {(user.role === 'teacher') && (
+            <Route path="/admin" element={<Admin />} />
+          )}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </QuizProvider>
   );
 }
