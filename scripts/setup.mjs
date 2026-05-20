@@ -114,6 +114,8 @@ log('  → 32-cell 題目矩陣（約 1500 題）...', colors.yellow);
 run('npx tsx scripts/generate-questions.ts', ROOT);
 log('  → 臺灣在地化題目（夜市/捷運/珍奶）...', colors.yellow);
 run('npx tsx scripts/seed-questions-taiwan.ts', ROOT);
+log('  → 數學模組（32 題覆蓋 4×8 矩陣）...', colors.yellow);
+run('npx tsx scripts/seed-math.ts', ROOT);
 log('  → 讚美語庫（500+ 一般 + 50 SEN）...', colors.yellow);
 run('npx tsx scripts/seed-praise-library.ts', ROOT);
 success('示範資料填入完成！');
