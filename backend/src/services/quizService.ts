@@ -245,7 +245,13 @@ export class QuizService {
       (sum, d) => sum + (d.is_correct ? d.score : 0),
       0
     );
-    const isPassed = totalScore >= 60 ? 1 : 0;
+    // Pass threshold is 60% of the per-quiz ceiling. With 10 questions × 10 pts
+    // the ceiling is 100 → ≥60 passes (matches CLAUDE.md spec). With SEN's
+    // 5 questions × 10 pts the ceiling is 50 → ≥30 passes. This keeps the
+    // bar pedagogically equivalent rather than penalising SEN users.
+    const maxScore = details.reduce((sum, d) => sum + d.score, 0);
+    const passThreshold = Math.ceil(maxScore * 0.6);
+    const isPassed = totalScore >= passThreshold ? 1 : 0;
 
     // 計算測驗時長
     db.prepare(

@@ -180,6 +180,9 @@ async function runOne(browser: Browser, args: CliArgs, runIdx: number): Promise<
     const level_up = await page.locator('text=升級了').first().isVisible().catch(() => false);
     const praise = await page.locator('.italic').first().innerText().catch(() => '');
 
+    // Pass threshold scales with question count: 60% of (total_questions × 10).
+    // SEN mode (5 questions) needs ≥30; normal mode needs ≥60.
+    const passThreshold = Math.ceil(total_questions * 10 * 0.6);
     return {
       persona,
       theory,
@@ -187,7 +190,7 @@ async function runOne(browser: Browser, args: CliArgs, runIdx: number): Promise<
       correct,
       total_questions,
       duration_ms,
-      passed: total_score >= 60,
+      passed: total_score >= passThreshold,
       level_up,
       praise: praise.replace(/[「」]/g, '').trim(),
     };
