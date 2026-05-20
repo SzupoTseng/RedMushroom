@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useConfig } from '../../context/ConfigContext';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '../../i18n';
 

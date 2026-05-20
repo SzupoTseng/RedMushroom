@@ -26,8 +26,9 @@ function log(msg, color = colors.reset) {
   console.log(`${color}${msg}${colors.reset}`);
 }
 
-function step(n, total, msg) {
-  log(`\n[${n}/${total}] ${msg}`, colors.cyan + colors.bold);
+const TOTAL_STEPS = 5;
+function step(n, msg) {
+  log(`\n[${n}/${TOTAL_STEPS}] ${msg}`, colors.cyan + colors.bold);
 }
 
 function success(msg) {
@@ -49,7 +50,7 @@ function run(cmd, cwd = ROOT) {
 // ────────────────────────────────────────
 // 步驟 1：檢查 Node.js 版本
 // ────────────────────────────────────────
-step(1, 5, '檢查 Node.js 版本...');
+step(1, '檢查 Node.js 版本...');
 const nodeVersion = process.versions.node;
 const major = parseInt(nodeVersion.split('.')[0]);
 if (major < 18) {
@@ -62,7 +63,7 @@ success(`Node.js ${nodeVersion} ✓`);
 // ────────────────────────────────────────
 // 步驟 2：安裝依賴
 // ────────────────────────────────────────
-step(2, 5, '安裝所有依賴套件（可能需要 1-3 分鐘，請耐心等候）...');
+step(2, '安裝所有依賴套件（可能需要 1-3 分鐘，請耐心等候）...');
 
 log('  → 安裝根目錄依賴...', colors.yellow);
 run('npm install --prefer-offline 2>/dev/null || npm install', ROOT);
@@ -93,7 +94,7 @@ if (!existsSync(envPath)) {
 // ────────────────────────────────────────
 // 步驟 3：建立資料庫
 // ────────────────────────────────────────
-step(3, 5, '建立 SQLite 資料庫...');
+step(3, '建立 SQLite 資料庫...');
 
 const dbDir = join(ROOT, 'database');
 if (!existsSync(dbDir)) {
@@ -106,17 +107,21 @@ success('資料庫建立完成！');
 // ────────────────────────────────────────
 // 步驟 4：填入示範題目
 // ────────────────────────────────────────
-step(4, 5, '填入示範題目與讚美語庫...');
+step(4, '填入示範題目、臺灣在地化題庫與讚美語庫（共 4 個種子）...');
+log('  → 示範帳號與 11 條讚美語...', colors.yellow);
 run('npx tsx scripts/seed-minimal.ts', ROOT);
+log('  → 32-cell 題目矩陣（約 1500 題）...', colors.yellow);
 run('npx tsx scripts/generate-questions.ts', ROOT);
+log('  → 臺灣在地化題目（夜市/捷運/珍奶）...', colors.yellow);
 run('npx tsx scripts/seed-questions-taiwan.ts', ROOT);
+log('  → 讚美語庫（500+ 一般 + 50 SEN）...', colors.yellow);
 run('npx tsx scripts/seed-praise-library.ts', ROOT);
 success('示範資料填入完成！');
 
 // ────────────────────────────────────────
 // 步驟 5：完成！
 // ────────────────────────────────────────
-step(5, 5, '安裝完成！');
+step(5, '安裝完成！');
 log('\n' + '='.repeat(50), colors.green + colors.bold);
 log('🍄 RedMushroom 安裝成功！', colors.green + colors.bold);
 log('='.repeat(50), colors.green + colors.bold);

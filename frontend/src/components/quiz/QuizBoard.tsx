@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuiz } from '../../context/QuizContext';
 import SortingDisplay from './SortingDisplay';
 import SpeechRecorder from './SpeechRecorder';

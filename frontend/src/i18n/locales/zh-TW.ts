@@ -104,6 +104,6 @@ export const zhTW = {
     levelUp: '升級了！',
     greeting: '加油！你可以的！',
   },
-} as const;
+};
 
 export type Locale = typeof zhTW;

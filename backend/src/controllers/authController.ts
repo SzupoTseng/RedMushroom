@@ -12,6 +12,10 @@ interface UserRow {
   display_name: string;
   role: string;
   grade: string;
+  total_exp: number;
+  current_level: number;
+  streak_days: number;
+  max_streak: number;
   is_sen_mode: number;
 }
 
@@ -68,7 +72,9 @@ export async function login(req: Request, res: Response): Promise<void> {
 
   const db = getDb();
   const user = db.prepare(
-    'SELECT user_id, username, password_hash, display_name, role, grade, is_sen_mode FROM users WHERE username = ?'
+    `SELECT user_id, username, password_hash, display_name, role, grade,
+            total_exp, current_level, streak_days, max_streak, is_sen_mode
+     FROM users WHERE username = ?`
   ).get(username) as UserRow | undefined;
 
   if (!user) {
@@ -102,6 +108,10 @@ export async function login(req: Request, res: Response): Promise<void> {
       display_name: user.display_name,
       role: user.role,
       grade: user.grade,
+      total_exp: user.total_exp,
+      current_level: user.current_level,
+      streak_days: user.streak_days,
+      max_streak: user.max_streak,
       is_sen_mode: user.is_sen_mode === 1,
     },
   });
