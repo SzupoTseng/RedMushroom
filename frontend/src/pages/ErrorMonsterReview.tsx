@@ -8,9 +8,21 @@ interface Monster {
   question_id: number;
   streak_correct: number;
   next_review_time: string;
+  is_due: boolean;
   content: ZhuyinChar[];
   options: Record<string, string>;
   theory_type: string;
+}
+
+function formatRelative(iso: string): string {
+  const now = Date.now();
+  const target = new Date(iso.replace(' ', 'T') + 'Z').getTime();
+  const diffMin = Math.round((target - now) / 60000);
+  if (diffMin <= 0) return '現在可複習';
+  if (diffMin < 60) return `等待 ${diffMin} 分鐘`;
+  const h = Math.round(diffMin / 60);
+  if (h < 24) return `等待 ${h} 小時`;
+  return `等待 ${Math.round(h / 24)} 天`;
 }
 
 export default function ErrorMonsterReview() {
@@ -91,9 +103,20 @@ export default function ErrorMonsterReview() {
       </div>
 
       <div className="card mb-4">
-        <p className={`mb-3 ${sen ? 'text-base text-gray-500' : 'text-sm text-gray-400'}`}>
-          {current.theory_type} · 連續答對 {current.streak_correct} 次（淨化需 3 次）
-        </p>
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`${sen ? 'text-base' : 'text-sm'} text-gray-500`}>
+            {current.theory_type} · 連續答對 {current.streak_correct} 次（淨化需 3 次）
+          </span>
+          {current.is_due ? (
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+              🟢 現在可複習
+            </span>
+          ) : (
+            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+              ⏳ {formatRelative(current.next_review_time)}
+            </span>
+          )}
+        </div>
 
         <div className={`font-bold mb-6 flex flex-wrap ${sen ? 'text-3xl gap-2' : 'text-2xl gap-1'}`}>
           {current.content.map((c, i) =>

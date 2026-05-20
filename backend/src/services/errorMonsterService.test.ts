@@ -68,7 +68,7 @@ describe('ErrorMonsterService', () => {
     expect(row.streak_correct).toBe(0);
   });
 
-  it('dueForUser hides monsters whose next_review_time is in the future', () => {
+  it('dueForUser lists all active monsters with is_due flag (future ones not hidden)', () => {
     const svc = new ErrorMonsterService();
     svc.onAnswered(USER, Q2, false);
     getDb()
@@ -76,7 +76,23 @@ describe('ErrorMonsterService', () => {
                 SET next_review_time = datetime('now', '+1 day')
                 WHERE user_id=? AND question_id=?`)
       .run(USER, Q2);
-    const due = svc.dueForUser(USER);
-    expect(due.find((m) => m.question_id === Q2)).toBeUndefined();
+    const all = svc.dueForUser(USER);
+    const q2 = all.find((m) => m.question_id === Q2);
+    expect(q2).toBeDefined();
+    expect(q2?.is_due).toBe(false);
+  });
+
+  it('newly-trapped monster appears with is_due=true within an hour fallback path', () => {
+    const svc = new ErrorMonsterService();
+    svc.onAnswered(USER, 3, false); // 抓進 user_error_monsters
+    // 強制把 next_review_time 設成過去 1 分鐘，模擬 1 小時已過
+    getDb()
+      .prepare(`UPDATE user_error_monsters
+                SET next_review_time = datetime('now', '-1 minutes')
+                WHERE user_id=? AND question_id=3`)
+      .run(USER);
+    const all = svc.dueForUser(USER);
+    const q3 = all.find((m) => m.question_id === 3);
+    expect(q3?.is_due).toBe(true);
   });
 });

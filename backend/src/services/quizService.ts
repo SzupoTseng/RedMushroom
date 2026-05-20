@@ -84,6 +84,23 @@ export class QuizService {
   }
 
   /**
+   * 取得使用者最近 6 小時內已答過的題目 ID 集合，用於下一場抽題時排除。
+   * 「重複」由時間窗界定，而非永久——避免題庫被很快「打完」。
+   */
+  private getRecentlySeenIds(userId: number, hours = 6): Set<number> {
+    const rows = this.db
+      .prepare(
+        `SELECT DISTINCT d.question_id
+         FROM quiz_details d
+         JOIN quiz_sessions s ON s.session_id = d.session_id
+         WHERE s.user_id = ?
+           AND s.start_time >= datetime('now', '-' || ? || ' hours')`
+      )
+      .all(userId, hours) as Array<{ question_id: number }>;
+    return new Set(rows.map((r) => r.question_id));
+  }
+
+  /**
    * Stratified sampling: 從每個 category bucket 輪流抽出題目，
    * 確保 N 題涵蓋盡量多的生活情境，而不是全部來自同一個 category。
    */
@@ -133,7 +150,16 @@ export class QuizService {
     if (totalAvail < questionCount) {
       throw new Error(`題庫不足：${subject}/${theoryType} 只有 ${totalAvail} 題，需要 ${questionCount} 題`);
     }
-    const selectedIds = this.pickDiverseQuestions(buckets, questionCount);
+
+    // 6 小時內已答過的題目排除；若新鮮題不足才回退使用全池。
+    const seenIds = this.getRecentlySeenIds(userId, 6);
+    const fresh: Record<string, number[]> = {};
+    for (const [cat, ids] of Object.entries(buckets)) {
+      fresh[cat] = ids.filter((id) => !seenIds.has(id));
+    }
+    const freshTotal = Object.values(fresh).reduce((s, ids) => s + ids.length, 0);
+    const useBuckets = freshTotal >= questionCount ? fresh : buckets;
+    const selectedIds = this.pickDiverseQuestions(useBuckets, questionCount);
     const placeholders = selectedIds.map(() => '?').join(',');
     const questions = db
       .prepare(
