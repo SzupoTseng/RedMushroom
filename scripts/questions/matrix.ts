@@ -1,4 +1,4 @@
-import { TEMPLATES, templateRows } from './templates';
+import { TEMPLATES, templateRows, pickPrompt } from './templates';
 import { zhuyinize } from './zhuyin';
 
 export interface Question {
@@ -16,8 +16,10 @@ export interface Question {
 export function buildQuestionMatrix(): Question[] {
   const out: Question[] = [];
   for (const t of TEMPLATES) {
+    let rowIdx = 0;
     for (const v of templateRows(t)) {
-      const promptText = t.prompt(v);
+      const promptFn = pickPrompt(t, rowIdx);
+      const promptText = promptFn(v);
       out.push({
         subject: 'chinese',
         theory_type: t.theory_type,
@@ -29,6 +31,7 @@ export function buildQuestionMatrix(): Question[] {
         explanation: t.explanation(v),
         score: 10,
       });
+      rowIdx++;
     }
   }
   return out;

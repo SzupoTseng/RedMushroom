@@ -26,8 +26,9 @@ interface QuestionForClient {
   subject: string;
 }
 
-// 快取：Map<`${subject}:${theory_type}`, question_id[]>
-const questionIdCache = new Map<string, number[]>();
+// 快取：Map<`${subject}:${theory_type}`, Record<category, question_id[]>>
+// 改為按 category 分桶，方便 stratified sampling 確保題目橫跨多個生活情境。
+const questionIdCache = new Map<string, Record<string, number[]>>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 分鐘
 const cacheTimestamps = new Map<string, number>();
 
@@ -52,21 +53,67 @@ export class QuizService {
     return rows.map((r) => r.subject);
   }
 
-  private getShuffledQuestionIds(subject: string, theoryType: string): number[] {
+  /**
+   * 把題目按 category_type 分桶並快取，5 分鐘 TTL。回傳每個 category 的 shuffled IDs。
+   */
+  private getBucketsByCategory(subject: string, theoryType: string): Record<string, number[]> {
     const key = `${subject}:${theoryType}`;
     const now = Date.now();
     const lastFetch = cacheTimestamps.get(key) ?? 0;
 
     if (!questionIdCache.has(key) || now - lastFetch > CACHE_TTL_MS) {
       const rows = this.db
-        .prepare('SELECT question_id FROM questions WHERE subject = ? AND theory_type = ?')
-        .all(subject, theoryType) as Array<{ question_id: number }>;
-      const ids = rows.map((r) => r.question_id);
-      questionIdCache.set(key, ids);
+        .prepare(
+          'SELECT question_id, category_type FROM questions WHERE subject = ? AND theory_type = ?'
+        )
+        .all(subject, theoryType) as Array<{ question_id: number; category_type: string }>;
+
+      const buckets: Record<string, number[]> = {};
+      for (const r of rows) {
+        (buckets[r.category_type] ??= []).push(r.question_id);
+      }
+      questionIdCache.set(key, buckets);
       cacheTimestamps.set(key, now);
     }
 
-    return shuffle([...(questionIdCache.get(key) ?? [])]);
+    // shallow-clone + shuffle each bucket so callers get a fresh shuffle but cache stays stable
+    const cached = questionIdCache.get(key) ?? {};
+    const out: Record<string, number[]> = {};
+    for (const k of Object.keys(cached)) out[k] = shuffle([...cached[k]]);
+    return out;
+  }
+
+  /**
+   * Stratified sampling: 從每個 category bucket 輪流抽出題目，
+   * 確保 N 題涵蓋盡量多的生活情境，而不是全部來自同一個 category。
+   */
+  private pickDiverseQuestions(buckets: Record<string, number[]>, count: number): number[] {
+    const cats = Object.keys(buckets);
+    if (cats.length === 0) return [];
+
+    // Round-robin: walk every category, take one ID at a time, repeat until we have `count`.
+    const cursors: Record<string, number> = {};
+    for (const c of cats) cursors[c] = 0;
+
+    const picked: number[] = [];
+    let safety = count * cats.length;
+    while (picked.length < count && safety-- > 0) {
+      let progressed = false;
+      // shuffle category order each pass so the same cat doesn't always go first
+      const order = shuffle([...cats]);
+      for (const c of order) {
+        if (picked.length >= count) break;
+        const ids = buckets[c];
+        const idx = cursors[c];
+        if (idx < ids.length) {
+          picked.push(ids[idx]);
+          cursors[c] = idx + 1;
+          progressed = true;
+        }
+      }
+      if (!progressed) break; // every bucket exhausted
+    }
+    return picked;
   }
 
   startQuiz(userId: number, theoryType: string, subject: string): {
@@ -81,12 +128,12 @@ export class QuizService {
       .get(userId) as { is_sen_mode: number } | undefined;
     const questionCount = user?.is_sen_mode ? 5 : 10;
 
-    const shuffledIds = this.getShuffledQuestionIds(subject, theoryType);
-    if (shuffledIds.length < questionCount) {
-      throw new Error(`題庫不足：${subject}/${theoryType} 只有 ${shuffledIds.length} 題，需要 ${questionCount} 題`);
+    const buckets = this.getBucketsByCategory(subject, theoryType);
+    const totalAvail = Object.values(buckets).reduce((s, ids) => s + ids.length, 0);
+    if (totalAvail < questionCount) {
+      throw new Error(`題庫不足：${subject}/${theoryType} 只有 ${totalAvail} 題，需要 ${questionCount} 題`);
     }
-
-    const selectedIds = shuffledIds.slice(0, questionCount);
+    const selectedIds = this.pickDiverseQuestions(buckets, questionCount);
     const placeholders = selectedIds.map(() => '?').join(',');
     const questions = db
       .prepare(

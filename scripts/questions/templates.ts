@@ -13,7 +13,16 @@ export interface Template {
   theory_type: TheoryType;
   category_type: CategoryType;
   question_type: QuestionType;
-  prompt: (vars: Record<string, string>) => string;
+  /**
+   * Single prompt builder. Use this for templates where one phrasing fits.
+   * Either `prompt` OR `prompts` (variants list) must be set.
+   */
+  prompt?: (vars: Record<string, string>) => string;
+  /**
+   * Multiple prompt phrasings. The generator picks `prompts[rowIdx % prompts.length]`
+   * so consecutive generated rows look meaningfully different even from the same template.
+   */
+  prompts?: Array<(vars: Record<string, string>) => string>;
   options: (vars: Record<string, string>) => Record<string, string>;
   answer: string;
   explanation: (vars: Record<string, string>) => string;
@@ -28,13 +37,31 @@ const WRONG_THINGS = ['書本', '玩具', '衣服', '汽車', '電視', '電腦'
 const WRONG_ACTIONS = ['唱歌', '跳舞', '睡覺', '跑步', '哭', '畫畫', '寫字', '吃飯'];
 const WRONG_FEELINGS = ['害怕', '生氣', '無聊', '緊張', '難過', '懷疑', '羞愧'];
 
+/**
+ * Shared prompt phrasings for "word → meaning" cognitive templates.
+ * Rotated by row index in matrix.ts so consecutive generated questions feel different.
+ */
+const MEANING_PROMPTS = [
+  (v: Record<string, string>) => `「${v.word}」這個詞是什麼意思？`,
+  (v: Record<string, string>) => `請問「${v.word}」最接近哪一個解釋？`,
+  (v: Record<string, string>) => `下列哪一個和「${v.word}」最像？`,
+  (v: Record<string, string>) => `「${v.word}」指的是？`,
+];
+
+/** Shared phrasings for sorting questions. */
+const SORTING_PROMPTS = [
+  () => '請把詞語排成正確的句子：',
+  () => '下面的詞語要怎麼排才通順？',
+  () => '請依語序重新排列：',
+];
+
 export const TEMPLATES: Template[] = [
   // ──────────────────────────────────────────────────────
   // COGNITIVE × 8 — 語詞認知（word + meaning coupled in `data`）
   // ──────────────────────────────────────────────────────
   {
     theory_type: 'cognitive', category_type: 'food_shopping', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」這個詞是什麼意思？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」指的是${v.right}。`,
@@ -47,14 +74,14 @@ export const TEMPLATES: Template[] = [
       { word: '甜點',  right: '甜的食物' },
     ],
     vars: {
-      w1: ['不能吃的東西', '玩具'],
-      w2: ['書本', '電燈'],
-      w3: ['天氣很冷', '在唱歌'],
+      w1: ['不能吃的東西'],
+      w2: ['書本'],
+      w3: ['天氣很冷'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'social', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」這個詞是什麼意思？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」表示${v.right}。`,
@@ -67,14 +94,14 @@ export const TEMPLATES: Template[] = [
       { word: '客人',  right: '來訪的人' },
     ],
     vars: {
-      w1: ['敵人', '陌生人'],
-      w2: ['動物', '機器人'],
-      w3: ['食物', '車輛'],
+      w1: ['敵人'],
+      w2: ['動物'],
+      w3: ['食物'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'travel', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」最可能指的是？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」是${v.right}。`,
@@ -87,14 +114,14 @@ export const TEMPLATES: Template[] = [
       { word: '飛機',   right: '飛在天上的運輸' },
     ],
     vars: {
-      w1: ['一種食物', '一種衣服'],
-      w2: ['一座山', '一條河'],
-      w3: ['一首歌', '一個遊戲'],
+      w1: ['一種食物'],
+      w2: ['一座山'],
+      w3: ['一首歌'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'business', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」是什麼意思？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」指${v.right}。`,
@@ -107,14 +134,14 @@ export const TEMPLATES: Template[] = [
       { word: '找錢',   right: '多付的錢退回' },
     ],
     vars: {
-      w1: ['打掃', '上學'],
-      w2: ['玩具', '汽車'],
-      w3: ['書架', '床鋪'],
+      w1: ['打掃'],
+      w2: ['玩具'],
+      w3: ['書架'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'health', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」最接近哪個意思？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」表示${v.right}。`,
@@ -127,14 +154,14 @@ export const TEMPLATES: Template[] = [
       { word: '清潔', right: '把身體洗乾淨' },
     ],
     vars: {
-      w1: ['脆弱', '一直工作'],
-      w2: ['書本', '玩具'],
-      w3: ['節日', '故事'],
+      w1: ['脆弱'],
+      w2: ['書本'],
+      w3: ['節日'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'leisure', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」這個詞是什麼意思？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」是${v.right}。`,
@@ -147,14 +174,14 @@ export const TEMPLATES: Template[] = [
       { word: '旅行', right: '到外地玩' },
     ],
     vars: {
-      w1: ['一種食物', '一種工具'],
-      w2: ['上課的科目', '生病的症狀'],
-      w3: ['天上的雲', '路上的石頭'],
+      w1: ['一種食物'],
+      w2: ['上課的科目'],
+      w3: ['天上的雲'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'housing', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」最可能指什麼？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」表示${v.right}。`,
@@ -167,14 +194,14 @@ export const TEMPLATES: Template[] = [
       { word: '書房', right: '看書寫字的房間' },
     ],
     vars: {
-      w1: ['學校的教室', '公園的草地'],
-      w2: ['一種食物', '一種工具'],
-      w3: ['一種動物', '一種植物'],
+      w1: ['學校的教室'],
+      w2: ['一種食物'],
+      w3: ['一種動物'],
     },
   },
   {
     theory_type: 'cognitive', category_type: 'digital', question_type: 'single_choice',
-    prompt: (v) => `「${v.word}」這個詞最可能指什麼？`,
+    prompts: MEANING_PROMPTS,
     options: (v) => ({ '1': v.right, '2': v.w1, '3': v.w2, '4': v.w3 }),
     answer: '1',
     explanation: (v) => `「${v.word}」是${v.right}。`,
@@ -187,9 +214,9 @@ export const TEMPLATES: Template[] = [
       { word: '鍵盤', right: '輸入文字的工具' },
     ],
     vars: {
-      w1: ['一種樂器', '一種球類'],
-      w2: ['一道菜', '一杯飲料'],
-      w3: ['一座山', '一條河'],
+      w1: ['一種樂器'],
+      w2: ['一道菜'],
+      w3: ['一座山'],
     },
   },
 
@@ -496,7 +523,7 @@ export const TEMPLATES: Template[] = [
   // ──────────────────────────────────────────────────────
   {
     theory_type: 'usage', category_type: 'food_shopping', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.tense, '3': v.v, '4': v.what }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.tense}${v.v}${v.what}。`,
@@ -509,7 +536,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'social', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.adv, '3': v.v, '4': v.obj }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.adv}${v.v}${v.obj}。`,
@@ -522,7 +549,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'travel', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.v, '3': v.where, '4': v.purpose }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.v}${v.where}${v.purpose}。`,
@@ -535,7 +562,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'business', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.v1, '3': v.thing, '4': v.v2 }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.v1}${v.thing}${v.v2}。`,
@@ -548,7 +575,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'health', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.time, '2': v.s, '3': v.v, '4': v.what }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.time}${v.s}${v.v}${v.what}。`,
@@ -561,7 +588,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'leisure', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.adv, '3': v.v, '4': v.what }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.adv}${v.v}${v.what}。`,
@@ -574,7 +601,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'housing', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.v, '3': v.in, '4': v.room }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.v}${v.in}${v.room}。`,
@@ -587,7 +614,7 @@ export const TEMPLATES: Template[] = [
   },
   {
     theory_type: 'usage', category_type: 'digital', question_type: 'sorting',
-    prompt: () => '請將詞語排成正確的句子：',
+    prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.v, '3': v.tool, '4': v.purpose }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.v}${v.tool}${v.purpose}。`,
@@ -610,6 +637,18 @@ export function templateRows(t: Template): Array<Record<string, string>> {
     [{}]
   );
   return dataRows.flatMap((d) => varRows.map((v) => ({ ...d, ...v })));
+}
+
+/**
+ * Return the prompt function for the given row index, rotating through prompt variants.
+ * Each template must declare either `prompt` (single) or `prompts` (variants list).
+ */
+export function pickPrompt(t: Template, rowIdx: number): (vars: Record<string, string>) => string {
+  const list = t.prompts ?? (t.prompt ? [t.prompt] : []);
+  if (list.length === 0) {
+    throw new Error(`Template ${t.theory_type}/${t.category_type} has no prompt`);
+  }
+  return list[rowIdx % list.length];
 }
 
 // Suppress unused exports lint
