@@ -8,11 +8,21 @@ interface Props {
   disabled: boolean;
 }
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export default function SortingDisplay({ question, onConfirm, disabled }: Props) {
-  const initial = Object.keys(question.options).map((k) => ({
-    id: k,
-    label: question.options[k],
-  }));
+  // Shuffle tiles so the correct order isn't shown by default.
+  // Correct answer is always the KEY sequence '1,2,3,4'; tile LABELS vary per question.
+  const initial = shuffleArray(
+    Object.keys(question.options).map((k) => ({ id: k, label: question.options[k] }))
+  );
   const [items, setItems] = useState(initial);
 
   const onDragEnd = (result: DropResult) => {
