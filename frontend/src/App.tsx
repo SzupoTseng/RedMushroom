@@ -17,6 +17,7 @@ const SubjectSelector    = lazy(() => import('./pages/SubjectSelector'));
 const ErrorMonsterReview = lazy(() => import('./pages/ErrorMonsterReview'));
 const Leaderboard        = lazy(() => import('./pages/Leaderboard'));
 const Pvp                = lazy(() => import('./pages/Pvp'));
+const TypingGame         = lazy(() => import('./pages/TypingGame'));
 
 function Loading() {
   return (
@@ -54,6 +55,7 @@ function AppRoutes() {
           <Route path="/monsters" element={<ErrorMonsterReview />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/pvp" element={<Pvp />} />
+        <Route path="/typing-game" element={<TypingGame />} />
           {(user.role === 'teacher') && (
             <Route path="/admin" element={<Admin />} />
           )}

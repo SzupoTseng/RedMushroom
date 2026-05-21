@@ -107,7 +107,15 @@ export default function SubjectSelector() {
       </div>
 
       {/* 額外功能 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4">
+        <button
+          onClick={() => navigate('/typing-game')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-mushroom-200 bg-indigo-50"
+        >
+          <div className="text-3xl mb-1">🎮</div>
+          <div className="font-black text-gray-800">打字遊戲</div>
+          <div className="text-xs text-gray-500 mt-1">注音打字消滅單字</div>
+        </button>
         <button
           onClick={() => navigate('/monsters')}
           className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-transparent"
