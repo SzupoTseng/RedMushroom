@@ -179,6 +179,15 @@ export class QuizService {
 
     const sessionId = sessionResult.lastInsertRowid as number;
 
+    // 顯示過的題目馬上寫入 quiz_details（空答案）。
+    // 即使使用者中途放棄，getRecentlySeenIds 也能排除這些題目，
+    // 確保 6 小時內「看過的」和「答過的」都不重複出現。
+    const preInsert = db.prepare(
+      `INSERT OR IGNORE INTO quiz_details (session_id, question_id, user_answer, is_correct)
+       VALUES (?, ?, '', 0)`
+    );
+    db.transaction((ids: number[]) => { for (const id of ids) preInsert.run(sessionId, id); })(selectedIds);
+
     // 移除 correct_answer，絕不回傳給前端
     const questionsForClient: QuestionForClient[] = questions.map((q) => ({
       question_id: q.question_id,
@@ -221,8 +230,10 @@ export class QuizService {
 
     const isCorrect = userAnswer.trim() === question.correct_answer.trim() ? 1 : 0;
 
+    // REPLACE the pre-inserted placeholder row written by startQuiz.
     db.prepare(
-      `INSERT INTO quiz_details (session_id, question_id, user_answer, is_correct, speech_text, speech_score)
+      `INSERT OR REPLACE INTO quiz_details
+         (session_id, question_id, user_answer, is_correct, speech_text, speech_score)
        VALUES (?, ?, ?, ?, ?, ?)`
     ).run(sessionId, questionId, userAnswer, isCorrect, speechText ?? null, speechScore ?? null);
 

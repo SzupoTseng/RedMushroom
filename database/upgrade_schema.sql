@@ -14,3 +14,12 @@ CREATE TABLE IF NOT EXISTS db_migrations (
 
 INSERT OR IGNORE INTO db_migrations (version, description)
 VALUES (1, 'Initial schema creation');
+
+-- v2: UNIQUE index on quiz_details(session_id, question_id)
+-- Enables pre-inserting "shown but not yet answered" rows so the 6h no-repeat
+-- window also covers questions the user saw but abandoned.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_details_session_question
+ON quiz_details(session_id, question_id);
+
+INSERT OR IGNORE INTO db_migrations (version, description)
+VALUES (2, 'UNIQUE index on quiz_details(session_id, question_id)');

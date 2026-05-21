@@ -195,8 +195,11 @@ CREATE INDEX IF NOT EXISTS idx_subject_theory
 CREATE INDEX IF NOT EXISTS idx_sessions_user
   ON quiz_sessions(user_id);
 
-CREATE INDEX IF NOT EXISTS idx_details_session
-  ON quiz_details(session_id);
+-- UNIQUE so startQuiz can pre-insert placeholder rows (empty answer) and
+-- submitAnswer can REPLACE them.  Also serves as the covering index for
+-- session lookups.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_details_session_question
+  ON quiz_details(session_id, question_id);
 
 CREATE INDEX IF NOT EXISTS idx_praise_scenario_tone
   ON praise_library(scenario_type, tone_type);
