@@ -1,5 +1,6 @@
 import { TEMPLATES, templateRows, pickPrompt } from './templates';
 import { zhuyinize } from './zhuyin';
+import { shuffleSingleChoice } from './shuffle';
 
 export interface Question {
   subject: 'chinese';
@@ -20,14 +21,17 @@ export function buildQuestionMatrix(): Question[] {
     for (const v of templateRows(t)) {
       const promptFn = pickPrompt(t, rowIdx);
       const promptText = promptFn(v);
+      const rawOptions = t.options(v);
+      const { options: shuffledOptions, answer: shuffledAnswer } =
+        shuffleSingleChoice(rawOptions, t.answer);
       out.push({
         subject: 'chinese',
         theory_type: t.theory_type,
         category_type: t.category_type,
         question_type: t.question_type,
         content: JSON.stringify(zhuyinize(promptText)),
-        options: JSON.stringify(t.options(v)),
-        correct_answer: t.answer,
+        options: JSON.stringify(shuffledOptions),
+        correct_answer: shuffledAnswer,
         explanation: t.explanation(v),
         score: 10,
       });

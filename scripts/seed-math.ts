@@ -6,6 +6,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { zhuyinize } from './questions/zhuyin';
+import { shuffleSingleChoice } from './questions/shuffle';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, '../database/redmushroom.db');
@@ -163,11 +164,12 @@ const insert = db.prepare(`
 
 const insertMany = db.transaction((rows: MQ[]) => {
   for (const q of rows) {
+    const { options, answer } = shuffleSingleChoice(q.options, q.answer);
     insert.run({
       ...q,
       content: JSON.stringify(zhuyinize(q.prompt)),
-      options: JSON.stringify(q.options),
-      correct_answer: q.answer,
+      options: JSON.stringify(options),
+      correct_answer: answer,
     });
   }
 });

@@ -81,13 +81,14 @@ function pickPersona(args: CliArgs, runIdx: number): Persona {
 function chooseAnswer(persona: Persona, optionKeys: string[], optionTexts: string[]): string {
   switch (persona) {
     case 'careful':
-      // 80% pick option 1 (which our generator always uses as correct),
-      // 20% pick randomly — simulates a kid who reads carefully but isn't infallible.
-      return Math.random() < 0.8 ? optionKeys[0] : optionKeys[Math.floor(Math.random() * optionKeys.length)];
+      // Read carefully but no insider knowledge — picks a random valid option.
+      // (Previously cheated by always picking '1' because the generator used to
+      // place the correct answer there. After the shuffle fix, that's no longer a hint.)
+      return optionKeys[Math.floor(Math.random() * optionKeys.length)];
     case 'random':
       return optionKeys[Math.floor(Math.random() * optionKeys.length)];
     case 'speedy':
-      // First-clickable option, no reading
+      // First-clickable option, no reading — useful for click-spam UX checks
       return optionKeys[0];
     case 'guesser': {
       // "longest option is usually correct" heuristic
