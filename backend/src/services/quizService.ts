@@ -169,11 +169,14 @@ export class QuizService {
       // Shuffle combined set, trim to exact count, ensure no dupes from rounding
       selectedIds = shuffle([...new Set(allIds)]).slice(0, questionCount);
 
-      // If somehow short (edge case: very thin DB), fill from any theory
+      // If short (edge case: very thin DB), fill from remaining theories without seenIds filter
       if (selectedIds.length < questionCount) {
-        const anyBuckets = this.getBucketsByCategory(subject, 'cognitive');
-        const extra = this.pickDiverseQuestions(anyBuckets, questionCount - selectedIds.length);
-        selectedIds = [...new Set([...selectedIds, ...extra])].slice(0, questionCount);
+        for (const theory of theories) {
+          if (selectedIds.length >= questionCount) break;
+          const fb = this.getBucketsByCategory(subject, theory);
+          const extra = this.pickDiverseQuestions(fb, questionCount - selectedIds.length);
+          selectedIds = [...new Set([...selectedIds, ...extra])].slice(0, questionCount);
+        }
       }
     } else {
       const buckets = this.getBucketsByCategory(subject, theoryType);
@@ -259,12 +262,13 @@ export class QuizService {
 
     const isCorrect = userAnswer.trim() === question.correct_answer.trim() ? 1 : 0;
 
-    // REPLACE the pre-inserted placeholder row written by startQuiz.
+    // UPDATE the pre-inserted placeholder row (written by startQuiz).
+    // Use UPDATE rather than INSERT OR REPLACE to preserve the detail_id primary key.
     db.prepare(
-      `INSERT OR REPLACE INTO quiz_details
-         (session_id, question_id, user_answer, is_correct, speech_text, speech_score)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(sessionId, questionId, userAnswer, isCorrect, speechText ?? null, speechScore ?? null);
+      `UPDATE quiz_details
+       SET user_answer = ?, is_correct = ?, speech_text = ?, speech_score = ?
+       WHERE session_id = ? AND question_id = ?`
+    ).run(userAnswer, isCorrect, speechText ?? null, speechScore ?? null, sessionId, questionId);
 
     // 語音相似度 ≥ 70% 且答對：額外 +5 XP
     if (isCorrect === 1 && speechScore !== undefined && speechScore >= 70) {

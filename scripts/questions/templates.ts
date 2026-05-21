@@ -77,7 +77,7 @@ export const TEMPLATES: Template[] = [
       { word: '蚵仔煎', right: '臺灣夜市的代表小吃', w1: '一種樂器',   w2: '燈泡',   w3: '一種天氣' },
       { word: '珍奶',   right: '珍珠奶茶的簡稱',   w1: '一種考試',     w2: '月亮',   w3: '一種表情' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'social', question_type: 'single_choice',
@@ -97,7 +97,7 @@ export const TEMPLATES: Template[] = [
       { word: '農夫', right: '種田的人',       w1: '商人',   w2: '工人', w3: '石油' },
       { word: '志工', right: '自願幫助別人的人', w1: '記者', w2: '廚師', w3: '行星' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'travel', question_type: 'single_choice',
@@ -117,7 +117,7 @@ export const TEMPLATES: Template[] = [
       { word: '渡輪',     right: '往來兩岸的船',     w1: '一種語言', w2: '一種運動', w3: '一個國家' },
       { word: '悠遊卡',   right: '搭乘大眾運輸的卡', w1: '一種食物', w2: '一種星星', w3: '一種聲音' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'business', question_type: 'single_choice',
@@ -137,7 +137,7 @@ export const TEMPLATES: Template[] = [
       { word: '零錢',   right: '小面額的硬幣',   w1: '紙鈔',   w2: '信用卡', w3: '外幣' },
       { word: '定價',   right: '原本設定的價格', w1: '市價',   w2: '成本', w3: '稅後' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'health', question_type: 'single_choice',
@@ -157,7 +157,7 @@ export const TEMPLATES: Template[] = [
       { word: '藥物', right: '治療疾病的物品', w1: '食物',   w2: '飲料', w3: '玩具' },
       { word: '疫苗', right: '預防疾病的注射', w1: '維他命', w2: '止痛藥', w3: '抗生素' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'leisure', question_type: 'single_choice',
@@ -177,7 +177,7 @@ export const TEMPLATES: Template[] = [
       { word: '舞蹈', right: '隨音樂移動身體',   w1: '一種水果', w2: '一種機器', w3: '一種面料' },
       { word: '手工藝', right: '用雙手做出的作品', w1: '一種考試', w2: '一種職業', w3: '一種能源' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'housing', question_type: 'single_choice',
@@ -197,7 +197,7 @@ export const TEMPLATES: Template[] = [
       { word: '走廊', right: '連接房間的長形通道', w1: '廣場',     w2: '花圃',     w3: '屋頂' },
       { word: '閣樓', right: '屋頂下的夾層空間', w1: '地窖',      w2: '游泳池',   w3: '停車場' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
   {
     theory_type: 'cognitive', category_type: 'digital', question_type: 'single_choice',
@@ -217,7 +217,7 @@ export const TEMPLATES: Template[] = [
       { word: '密碼',   right: '保護帳號的秘密文字',     w1: '一種音符', w2: '一種語言', w3: '一種植物' },
       { word: '下載',   right: '從網路取得資料到裝置',   w1: '一種考試', w2: '一種廣告', w3: '一種地形' },
     ],
-    vars: { _: [''] },
+    vars: {},
   },
 
   // ──────────────────────────────────────────────────────

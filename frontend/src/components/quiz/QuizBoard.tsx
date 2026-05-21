@@ -94,7 +94,12 @@ export default function QuizBoard() {
         )}
 
         {question.question_type === 'sorting' ? (
-          <SortingDisplay question={question} onConfirm={handleSelect} disabled={submitted} />
+          <SortingDisplay
+            key={question.question_id}
+            question={question}
+            onConfirm={handleSelect}
+            disabled={submitted}
+          />
         ) : (
           <div className={sen ? 'space-y-5' : 'space-y-3'}>
             {Object.entries(question.options).map(([key, label]) => {

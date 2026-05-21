@@ -20,10 +20,12 @@ function shuffleArray<T>(arr: T[]): T[] {
 export default function SortingDisplay({ question, onConfirm, disabled }: Props) {
   // Shuffle tiles so the correct order isn't shown by default.
   // Correct answer is always the KEY sequence '1,2,3,4'; tile LABELS vary per question.
-  const initial = shuffleArray(
+  // The parent passes key={question.question_id} so this component remounts per question,
+  // but useEffect guards against any edge case where key is omitted.
+  const makeInitial = () => shuffleArray(
     Object.keys(question.options).map((k) => ({ id: k, label: question.options[k] }))
   );
-  const [items, setItems] = useState(initial);
+  const [items, setItems] = useState(makeInitial);
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination || disabled) return;

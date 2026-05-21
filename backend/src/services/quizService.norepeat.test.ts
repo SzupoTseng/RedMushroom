@@ -27,10 +27,12 @@ describe('startQuiz: 6h no-repeat window', () => {
     expect(first.questions.length).toBe(10);
 
     // 把第一場全部當作答過（無論對錯，只要進 quiz_details 就算「看過」）
+    // UPDATE the pre-inserted placeholders (startQuiz already ran INSERT OR IGNORE for each).
+    // Using UPDATE instead of INSERT to avoid UNIQUE constraint violations.
     const db = getDb();
     const stmt = db.prepare(
-      `INSERT INTO quiz_details (session_id, question_id, user_answer, is_correct)
-       VALUES (?, ?, '1', 0)`
+      `UPDATE quiz_details SET user_answer = '1', is_correct = 0
+       WHERE session_id = ? AND question_id = ?`
     );
     for (const q of first.questions) stmt.run(first.session_id, q.question_id);
 
