@@ -40,20 +40,13 @@ if not exist frontend\node_modules (
     pause & exit /b 1
 )
 
-REM ── create DB if missing ─────────────────────────────────────────────
-if not exist database\redmushroom.db (
-    echo  [INFO] Database not found. Running full setup...
-    call npm run setup
-    if %ERRORLEVEL% NEQ 0 ( echo  [ERROR] Setup failed. & pause & exit /b 1 )
-    echo.
-    goto :launch
-)
-
-REM ── detect stale DB: correct answer always slot 1 = pre-shuffle seed ──
-node scripts\check-db-fresh.js 2>nul
-if %ERRORLEVEL% EQU 2 (
-    echo  [INFO] Database has old answer layout. Regenerating question bank...
-    del database\redmushroom.db
+REM ── check DB version marker ───────────────────────────────────────────
+REM   setup.mjs writes  database\.db-version  after seeding.
+REM   If the file is absent the DB is missing or was seeded with an old
+REM   version (e.g. before the answer-shuffle fix) and must be regenerated.
+if not exist "database\.db-version" (
+    echo  [INFO] DB version marker missing. Running full setup...
+    if exist database\redmushroom.db del /f database\redmushroom.db 2>nul
     call npm run setup
     if %ERRORLEVEL% NEQ 0 ( echo  [ERROR] Setup failed. & pause & exit /b 1 )
     echo.

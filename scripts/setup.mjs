@@ -6,9 +6,13 @@
  */
 
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+
+// Bump this string whenever the seed scripts change in a breaking way.
+// Run.bat checks for this file; if missing or stale, it wipes and re-seeds.
+const DB_VERSION = 'shuffle-v1';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -119,6 +123,9 @@ run('npx tsx scripts/seed-math.ts', ROOT);
 log('  → 讚美語庫（500+ 一般 + 50 SEN）...', colors.yellow);
 run('npx tsx scripts/seed-praise-library.ts', ROOT);
 success('示範資料填入完成！');
+
+// Write version marker so Run.bat knows the DB is up-to-date.
+writeFileSync(join(ROOT, 'database', '.db-version'), DB_VERSION);
 
 // ────────────────────────────────────────
 // 步驟 5：完成！
