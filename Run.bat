@@ -1,86 +1,78 @@
 @echo off
-chcp 65001 > nul
 title RedMushroom Dev
 cd /d "%~dp0"
 
 echo.
 echo  =============================================
-echo   RedMushroom Dev - 啟動前後端
+echo   RedMushroom Dev
 echo  =============================================
 echo.
-echo  目前資料夾：%CD%
+echo  Folder: %CD%
 echo.
 
 if not exist package.json (
-    echo  [錯誤] 找不到 package.json，dev.bat 必須放在專案根目錄。
-    echo.
-    pause
-    exit /b 1
+    echo  [ERROR] package.json not found. Put Run.bat in the project root.
+    pause & exit /b 1
 )
 
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo  [錯誤] 找不到 Node.js，請先安裝：https://nodejs.org/zh-tw
-    echo.
-    pause
-    exit /b 1
+    echo  [ERROR] Node.js not found. Install from https://nodejs.org
+    pause & exit /b 1
 )
-echo  Node:
-node -v
+for /f "tokens=*" %%v in ('node -v') do echo  Node %%v
 echo.
 
-REM 檢查 concurrently 本身存在（不只是 node_modules 資料夾）
+REM ── auto-install root deps if missing ────────────────────────────────
 if not exist "node_modules\concurrently\package.json" (
-    echo  [提示] 根目錄沒裝 concurrently，幫你自動 npm install...
+    echo  [INFO] Installing root dependencies...
     call npm install
-    if %ERRORLEVEL% NEQ 0 (
-        echo  [錯誤] 根目錄 npm install 失敗，請手動執行：npm install
-        echo.
-        pause
-        exit /b 1
-    )
+    if %ERRORLEVEL% NEQ 0 ( echo  [ERROR] npm install failed. & pause & exit /b 1 )
     echo.
-    if not exist "node_modules\concurrently\package.json" (
-        echo  [錯誤] npm install 完成但 concurrently 仍找不到，請手動執行：npm install concurrently
-        echo.
-        pause
-        exit /b 1
-    )
 )
 
 if not exist backend\node_modules (
-    echo  [錯誤] backend\node_modules 不存在，請先雙擊 start.bat 安裝。
-    echo.
-    pause
-    exit /b 1
+    echo  [ERROR] backend\node_modules missing. Run start.bat first.
+    pause & exit /b 1
 )
 if not exist frontend\node_modules (
-    echo  [錯誤] frontend\node_modules 不存在，請先雙擊 start.bat 安裝。
-    echo.
-    pause
-    exit /b 1
+    echo  [ERROR] frontend\node_modules missing. Run start.bat first.
+    pause & exit /b 1
 )
+
+REM ── create DB if missing ─────────────────────────────────────────────
 if not exist database\redmushroom.db (
-    echo  [錯誤] database\redmushroom.db 不存在，請先雙擊 start.bat 建立。
+    echo  [INFO] Database not found. Running full setup...
+    call npm run setup
+    if %ERRORLEVEL% NEQ 0 ( echo  [ERROR] Setup failed. & pause & exit /b 1 )
     echo.
-    pause
-    exit /b 1
+    goto :launch
 )
 
-echo  [OK] 環境檢查通過，準備啟動服務...
+REM ── detect stale DB: correct answer always slot 1 = pre-shuffle seed ──
+node scripts\check-db-fresh.js 2>nul
+if %ERRORLEVEL% EQU 2 (
+    echo  [INFO] Database has old answer layout. Regenerating question bank...
+    del database\redmushroom.db
+    call npm run setup
+    if %ERRORLEVEL% NEQ 0 ( echo  [ERROR] Setup failed. & pause & exit /b 1 )
+    echo.
+)
+
+:launch
+echo  [OK] Environment ready.
+echo.
+echo  Backend  http://localhost:3001
+echo  Frontend http://localhost:5173
+echo  Browser opens automatically in 8 seconds.
+echo.
+echo  Press Ctrl+C twice to stop all services.
 echo.
 
-REM 8 秒後用預設瀏覽器開網址（背景）
 start "open-browser" /MIN cmd /c "timeout /t 8 /nobreak > nul && start """" http://localhost:5173"
-
-echo  後端 http://localhost:3001
-echo  前端 http://localhost:5173 （8 秒後自動以預設瀏覽器開啟）
-echo.
-echo  按 Ctrl+C 兩次可關閉服務。
-echo.
 
 call npm start
 
 echo.
-echo  服務已關閉。
+echo  Services stopped.
 pause

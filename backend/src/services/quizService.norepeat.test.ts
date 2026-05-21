@@ -32,7 +32,7 @@ describe('startQuiz: 6h no-repeat window', () => {
       `INSERT INTO quiz_details (session_id, question_id, user_answer, is_correct)
        VALUES (?, ?, '1', 0)`
     );
-    for (const q of first.questions) stmt.run(first.session_id, q.question_id, );
+    for (const q of first.questions) stmt.run(first.session_id, q.question_id);
 
     // 馬上開第二場 — 應該完全不出現第一場任何題目（cognitive 題庫遠超 10 題）
     const second = svc.startQuiz(USER, 'cognitive', 'chinese');
