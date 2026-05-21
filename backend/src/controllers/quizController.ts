@@ -22,7 +22,7 @@ export async function startQuiz(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const validTypes = ['cognitive', 'input', 'usage', 'sociocultural', 'mixed'];
+  const validTypes = ['cognitive', 'input', 'usage', 'sociocultural', 'mixed', 'sorting'];
   if (!validTypes.includes(theory_type)) {
     res.status(400).json({ error: '無效的 theory_type' });
     return;

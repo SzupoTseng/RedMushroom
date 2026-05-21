@@ -9,6 +9,7 @@ import type { TheoryType } from '../types';
 
 const THEORY_TYPES: { key: TheoryType; label: string; icon: string; desc: string; highlight?: boolean }[] = [
   { key: 'mixed',         label: '綜合練習', icon: '🎯', desc: '四大主題各取 2-3 題，最多元的練習', highlight: true },
+  { key: 'sorting',       label: '排句子',   icon: '✂️', desc: '把詞語拖曳成正確的句子順序' },
   { key: 'cognitive',     label: '語詞認知', icon: '🧠', desc: '認識生字、詞彙意義' },
   { key: 'input',         label: '語言輸入', icon: '👁', desc: '閱讀理解、語段接收' },
   { key: 'usage',         label: '語言運用', icon: '✍️', desc: '造句、填空、語言表達' },
@@ -91,7 +92,7 @@ export default function SubjectSelector() {
                 : t.highlight
                   ? 'border-mushroom-300 bg-mushroom-50'
                   : 'border-transparent'}
-              ${t.key === 'mixed' ? 'sm:col-span-2' : ''}`}
+              ${(t.key === 'mixed' || t.key === 'sorting') ? 'sm:col-span-2' : ''}`}
           >
             <div className="text-4xl mb-2">{t.icon}</div>
             <div className="text-lg font-black text-gray-800">{t.label}</div>

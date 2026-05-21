@@ -149,7 +149,33 @@ export class QuizService {
 
     let selectedIds: number[];
 
-    if (theoryType === 'mixed') {
+    if (theoryType === 'sorting') {
+      // 排句子專區：只從 question_type='sorting' 的題目中抽取，跨全部 category。
+      const rows = this.db
+        .prepare(
+          `SELECT question_id, category_type FROM questions
+           WHERE subject = ? AND question_type = 'sorting'`
+        )
+        .all(subject) as Array<{ question_id: number; category_type: string }>;
+
+      const buckets: Record<string, number[]> = {};
+      for (const r of rows) (buckets[r.category_type] ??= []).push(r.question_id);
+
+      const totalAvail = rows.length;
+      if (totalAvail < questionCount) {
+        throw new Error(`排句子題庫不足：只有 ${totalAvail} 題，需要 ${questionCount} 題`);
+      }
+
+      const fresh: Record<string, number[]> = {};
+      for (const [cat, ids] of Object.entries(buckets)) {
+        fresh[cat] = ids.filter((id) => !seenIds.has(id));
+      }
+      const freshTotal = Object.values(fresh).reduce((s, ids) => s + ids.length, 0);
+      selectedIds = this.pickDiverseQuestions(
+        freshTotal >= questionCount ? fresh : buckets,
+        questionCount
+      );
+    } else if (theoryType === 'mixed') {
       // 綜合練習：四個理論各取 2-3 題（SEN 各取 1-2），確保題目最多元。
       const theories = ['cognitive', 'input', 'usage', 'sociocultural'];
       const perTheory = Math.ceil(questionCount / theories.length); // 3 normal, 2 SEN
