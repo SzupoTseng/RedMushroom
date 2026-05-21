@@ -36,7 +36,7 @@ export interface QuestionWithAnswer extends Question {
 }
 
 // ── 型別聯合 ─────────────────────────────────
-export type TheoryType = 'cognitive' | 'input' | 'usage' | 'sociocultural';
+export type TheoryType = 'cognitive' | 'input' | 'usage' | 'sociocultural' | 'mixed';
 export type CategoryType =
   | 'food_shopping' | 'social' | 'travel' | 'business'
   | 'health' | 'leisure' | 'housing' | 'digital';

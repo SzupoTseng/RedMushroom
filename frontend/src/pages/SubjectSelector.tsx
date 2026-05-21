@@ -7,10 +7,11 @@ import StreakFire from '../components/common/StreakFire';
 import { useTranslation } from '../i18n';
 import type { TheoryType } from '../types';
 
-const THEORY_TYPES: { key: TheoryType; label: string; icon: string; desc: string }[] = [
-  { key: 'cognitive', label: '語詞認知', icon: '🧠', desc: '認識生字、詞彙意義' },
-  { key: 'input', label: '語言輸入', icon: '👁', desc: '閱讀理解、語段接收' },
-  { key: 'usage', label: '語言運用', icon: '✍️', desc: '造句、填空、語言表達' },
+const THEORY_TYPES: { key: TheoryType; label: string; icon: string; desc: string; highlight?: boolean }[] = [
+  { key: 'mixed',         label: '綜合練習', icon: '🎯', desc: '四大主題各取 2-3 題，最多元的練習', highlight: true },
+  { key: 'cognitive',     label: '語詞認知', icon: '🧠', desc: '認識生字、詞彙意義' },
+  { key: 'input',         label: '語言輸入', icon: '👁', desc: '閱讀理解、語段接收' },
+  { key: 'usage',         label: '語言運用', icon: '✍️', desc: '造句、填空、語言表達' },
   { key: 'sociocultural', label: '社文語境', icon: '🌏', desc: '節日、習俗、文化背景' },
 ];
 
@@ -85,7 +86,12 @@ export default function SubjectSelector() {
             onClick={() => handleSelect(t.key)}
             disabled={loading !== null}
             className={`card text-left transition-all hover:shadow-lg active:scale-[0.98]
-              border-2 ${loading === t.key ? 'border-mushroom-400 bg-mushroom-50' : 'border-transparent'}`}
+              border-2 ${loading === t.key
+                ? 'border-mushroom-400 bg-mushroom-50'
+                : t.highlight
+                  ? 'border-mushroom-300 bg-mushroom-50'
+                  : 'border-transparent'}
+              ${t.key === 'mixed' ? 'sm:col-span-2' : ''}`}
           >
             <div className="text-4xl mb-2">{t.icon}</div>
             <div className="text-lg font-black text-gray-800">{t.label}</div>

@@ -145,21 +145,50 @@ export class QuizService {
       .get(userId) as { is_sen_mode: number } | undefined;
     const questionCount = user?.is_sen_mode ? 5 : 10;
 
-    const buckets = this.getBucketsByCategory(subject, theoryType);
-    const totalAvail = Object.values(buckets).reduce((s, ids) => s + ids.length, 0);
-    if (totalAvail < questionCount) {
-      throw new Error(`題庫不足：${subject}/${theoryType} 只有 ${totalAvail} 題，需要 ${questionCount} 題`);
-    }
-
-    // 6 小時內已答過的題目排除；若新鮮題不足才回退使用全池。
     const seenIds = this.getRecentlySeenIds(userId, 6);
-    const fresh: Record<string, number[]> = {};
-    for (const [cat, ids] of Object.entries(buckets)) {
-      fresh[cat] = ids.filter((id) => !seenIds.has(id));
+
+    let selectedIds: number[];
+
+    if (theoryType === 'mixed') {
+      // 綜合練習：四個理論各取 2-3 題（SEN 各取 1-2），確保題目最多元。
+      const theories = ['cognitive', 'input', 'usage', 'sociocultural'];
+      const perTheory = Math.ceil(questionCount / theories.length); // 3 normal, 2 SEN
+      const allIds: number[] = [];
+
+      for (const theory of theories) {
+        const tb = this.getBucketsByCategory(subject, theory);
+        const freshBuckets: Record<string, number[]> = {};
+        for (const [cat, ids] of Object.entries(tb)) {
+          freshBuckets[cat] = ids.filter((id) => !seenIds.has(id));
+        }
+        const freshTotal = Object.values(freshBuckets).reduce((s, ids) => s + ids.length, 0);
+        const pool = freshTotal >= perTheory ? freshBuckets : tb;
+        allIds.push(...this.pickDiverseQuestions(pool, perTheory));
+      }
+
+      // Shuffle combined set, trim to exact count, ensure no dupes from rounding
+      selectedIds = shuffle([...new Set(allIds)]).slice(0, questionCount);
+
+      // If somehow short (edge case: very thin DB), fill from any theory
+      if (selectedIds.length < questionCount) {
+        const anyBuckets = this.getBucketsByCategory(subject, 'cognitive');
+        const extra = this.pickDiverseQuestions(anyBuckets, questionCount - selectedIds.length);
+        selectedIds = [...new Set([...selectedIds, ...extra])].slice(0, questionCount);
+      }
+    } else {
+      const buckets = this.getBucketsByCategory(subject, theoryType);
+      const totalAvail = Object.values(buckets).reduce((s, ids) => s + ids.length, 0);
+      if (totalAvail < questionCount) {
+        throw new Error(`題庫不足：${subject}/${theoryType} 只有 ${totalAvail} 題，需要 ${questionCount} 題`);
+      }
+      const fresh: Record<string, number[]> = {};
+      for (const [cat, ids] of Object.entries(buckets)) {
+        fresh[cat] = ids.filter((id) => !seenIds.has(id));
+      }
+      const freshTotal = Object.values(fresh).reduce((s, ids) => s + ids.length, 0);
+      const useBuckets = freshTotal >= questionCount ? fresh : buckets;
+      selectedIds = this.pickDiverseQuestions(useBuckets, questionCount);
     }
-    const freshTotal = Object.values(fresh).reduce((s, ids) => s + ids.length, 0);
-    const useBuckets = freshTotal >= questionCount ? fresh : buckets;
-    const selectedIds = this.pickDiverseQuestions(useBuckets, questionCount);
     const placeholders = selectedIds.map(() => '?').join(',');
     const questions = db
       .prepare(
