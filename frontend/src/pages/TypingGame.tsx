@@ -21,41 +21,22 @@ const CODE_MAP: Record<string, string> = {
   'Digit6': 'ˊ', 'Digit7': 'ˇ', 'Digit8': 'ˋ', 'Digit9': '˙',
 };
 
-// ── Word bank ─────────────────────────────────────────────────────────────────
-const WORDS = [
+// ── Fallback word bank (used before API words load) ───────────────────────────
+const FALLBACK_WORDS = [
   { char: '好', py: 'ㄏㄠˇ' }, { char: '大', py: 'ㄉㄚˋ' },
   { char: '小', py: 'ㄒㄧㄠˇ' }, { char: '人', py: 'ㄖㄣˊ' },
   { char: '山', py: 'ㄕㄢ' }, { char: '水', py: 'ㄕㄨㄟˇ' },
   { char: '天', py: 'ㄊㄧㄢ' }, { char: '地', py: 'ㄉㄧˋ' },
-  { char: '日', py: 'ㄖˋ' }, { char: '月', py: 'ㄩㄝˋ' },
   { char: '火', py: 'ㄏㄨㄛˇ' }, { char: '木', py: 'ㄇㄨˋ' },
+  { char: '書', py: 'ㄕㄨ' }, { char: '車', py: 'ㄔㄜ' },
   { char: '花', py: 'ㄏㄨㄚ' }, { char: '草', py: 'ㄘㄠˇ' },
-  { char: '魚', py: 'ㄩˊ' }, { char: '鳥', py: 'ㄋㄧㄠˇ' },
-  { char: '貓', py: 'ㄇㄠ' }, { char: '狗', py: 'ㄍㄡˇ' },
-  { char: '書', py: 'ㄕㄨ' }, { char: '門', py: 'ㄇㄣˊ' },
-  { char: '車', py: 'ㄔㄜ' }, { char: '路', py: 'ㄌㄨˋ' },
-  { char: '雨', py: 'ㄩˇ' }, { char: '風', py: 'ㄈㄥ' },
-  { char: '雪', py: 'ㄒㄩㄝˇ' }, { char: '春', py: 'ㄔㄨㄣ' },
-  { char: '夏', py: 'ㄒㄧㄚˋ' }, { char: '秋', py: 'ㄑㄧㄡ' },
-  { char: '冬', py: 'ㄉㄨㄥ' }, { char: '紅', py: 'ㄏㄨㄥˊ' },
-  { char: '綠', py: 'ㄌㄩˋ' }, { char: '藍', py: 'ㄌㄢˊ' },
-  { char: '白', py: 'ㄅㄞˊ' }, { char: '黑', py: 'ㄏㄟ' },
+  { char: '紅', py: 'ㄏㄨㄥˊ' }, { char: '白', py: 'ㄅㄞˊ' },
   { char: '上', py: 'ㄕㄤˋ' }, { char: '下', py: 'ㄒㄧㄚˋ' },
-  { char: '左', py: 'ㄗㄨㄛˇ' }, { char: '右', py: 'ㄧㄡˋ' },
-  { char: '前', py: 'ㄑㄧㄢˊ' }, { char: '後', py: 'ㄏㄡˋ' },
   { char: '多', py: 'ㄉㄨㄛ' }, { char: '少', py: 'ㄕㄠˇ' },
   { char: '快', py: 'ㄎㄨㄞˋ' }, { char: '慢', py: 'ㄇㄢˋ' },
-  { char: '新', py: 'ㄒㄧㄣ' }, { char: '舊', py: 'ㄐㄧㄡˋ' },
-  { char: '吃', py: 'ㄔ' }, { char: '喝', py: 'ㄏㄜ' },
+  { char: '學', py: 'ㄒㄩㄝˊ' }, { char: '說', py: 'ㄕㄨㄛ' },
   { char: '走', py: 'ㄗㄡˇ' }, { char: '跑', py: 'ㄆㄠˇ' },
-  { char: '看', py: 'ㄎㄢˋ' }, { char: '聽', py: 'ㄊㄧㄥ' },
-  { char: '說', py: 'ㄕㄨㄛ' }, { char: '玩', py: 'ㄨㄢˊ' },
-  { char: '學', py: 'ㄒㄩㄝˊ' }, { char: '讀', py: 'ㄉㄨˊ' },
-  { char: '笑', py: 'ㄒㄧㄠˋ' }, { char: '哭', py: 'ㄎㄨ' },
   { char: '愛', py: 'ㄞˋ' }, { char: '家', py: 'ㄐㄧㄚ' },
-  { char: '心', py: 'ㄒㄧㄣ' }, { char: '手', py: 'ㄕㄡˇ' },
-  { char: '口', py: 'ㄎㄡˇ' }, { char: '耳', py: 'ㄦˇ' },
-  { char: '眼', py: 'ㄧㄢˇ' }, { char: '頭', py: 'ㄊㄡˊ' },
 ];
 
 interface FallingChar {
@@ -76,6 +57,9 @@ export default function TypingGame() {
     running: boolean; frame: number;
   }>({ chars: [], idSeq: 0, lastSpawn: 0, running: false, frame: 0 });
 
+  const [words, setWords] = useState<Array<{ char: string; py: string }>>(FALLBACK_WORDS);
+  const wordsRef = useRef(FALLBACK_WORDS);
+
   const [renderKey, setRenderKey] = useState(0);
   const [lives, setLives] = useState(MAX_LIVES);
   const [score, setScore] = useState(0);
@@ -89,6 +73,21 @@ export default function TypingGame() {
   const scoreRef = useRef(0);
   const comboRef = useRef(0);
   const inputRef = useRef('');  // mirror for use inside closures
+
+  // Fetch vocabulary from backend (DB-driven curriculum words)
+  useEffect(() => {
+    const token = localStorage.getItem('rm_token');
+    if (!token) return;
+    fetch('/api/quiz/vocab', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { vocab: Array<{ char: string; py: string }> } | null) => {
+        if (d?.vocab && d.vocab.length > 10) {
+          setWords(d.vocab);
+          wordsRef.current = d.vocab;
+        }
+      })
+      .catch(() => { /* use fallback */ });
+  }, []);
 
   // ── shoot ──────────────────────────────────────────────────────────────────
   const shoot = useCallback((c: FallingChar) => {
@@ -180,7 +179,8 @@ export default function TypingGame() {
 
       if (ts - s.lastSpawn > SPAWN_MS) {
         s.lastSpawn = ts;
-        const w = WORDS[Math.floor(Math.random() * WORDS.length)];
+        const pool = wordsRef.current;
+        const w = pool[Math.floor(Math.random() * pool.length)];
         s.chars.push({
           id: ++s.idSeq, char: w.char, py: w.py,
           x: 8 + Math.random() * 84, y: -8,
