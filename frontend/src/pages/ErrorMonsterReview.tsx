@@ -94,6 +94,7 @@ export default function ErrorMonsterReview() {
   return (
     <div className={`min-h-screen px-4 py-6 ${sen ? 'max-w-xl' : 'max-w-2xl'} mx-auto`}>
       <div className="flex items-center justify-between mb-4">
+        <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
         <h1 className={`font-bold ${sen ? 'text-2xl' : 'text-xl'}`}>
           🐲 錯題怪獸複習
         </h1>
