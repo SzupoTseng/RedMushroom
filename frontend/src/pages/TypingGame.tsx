@@ -24,17 +24,23 @@ function levelConfig(lv: number) {
   const speed = zoneSpeed(lv);
 
   if (lv <= 10) {
-    // 1-10關：無旋轉，固定慢速，目標 lv+4（5→14個）
+    // 1-10關：無旋轉，固定慢速，目標 lv+4
     const target      = lv + 4;
     const spawnMs     = Math.max(1800, 3600 - lv * 180);
-    const maxOnScreen = Math.ceil(lv / 2) + 1;    // 2 → 6
+    const maxOnScreen = Math.ceil(lv / 2) + 1;
+    return { target, speed, spawnMs, maxOnScreen, rotSp: 0 };
+  } else if (lv <= 50) {
+    // 11-50關：無旋轉，目標 = 關數
+    const target      = lv;
+    const spawnMs     = Math.max(1200, 1800 - (lv - 10) * 15);
+    const maxOnScreen = Math.min(8, Math.ceil(lv / 10) + 3);
     return { target, speed, spawnMs, maxOnScreen, rotSp: 0 };
   } else {
-    // 11-100關：緩慢旋轉，目標 = 關數
+    // 51-100關：緩慢旋轉，目標 = 關數
     const target      = lv;
-    const spawnMs     = Math.max(800, 1800 - (lv - 10) * 11);
+    const spawnMs     = Math.max(800, 1200 - (lv - 50) * 8);
     const maxOnScreen = Math.min(12, Math.ceil(lv / 10) + 4);
-    const rotSp       = 0.3 + (lv - 10) * 0.02;  // 0.5 → 2.1 deg/frame
+    const rotSp       = 0.3 + (lv - 50) * 0.03;  // 0.3 → 1.8 deg/frame
     return { target, speed, spawnMs, maxOnScreen, rotSp };
   }
 }
@@ -306,12 +312,12 @@ export default function TypingGame() {
         <div className="grid grid-cols-3 gap-2 mb-6 text-xs text-indigo-100 w-full max-w-sm">
           <div className="bg-indigo-800/60 rounded-xl p-2.5 text-center">
             <div className="font-bold text-white mb-1">第 1–10 關</div>
-            <div>🔵 無旋轉</div>
+            <div>⬇️ 正方向</div>
             <div className="text-yellow-200">慢速</div>
           </div>
           <div className="bg-purple-800/60 rounded-xl p-2.5 text-center">
             <div className="font-bold text-white mb-1">第 11–50 關</div>
-            <div>🌀 緩慢旋轉</div>
+            <div>⬇️ 正方向</div>
             <div className="text-yellow-200">慢 ×1.2</div>
           </div>
           <div className="bg-pink-900/60 rounded-xl p-2.5 text-center">
