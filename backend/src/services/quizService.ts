@@ -555,8 +555,14 @@ export class QuizService {
       .get(userId) as { total_exp: number; current_level: number };
 
     const newTotalExp = user.total_exp + expGained;
-    // 等級公式：level = floor(sqrt(total_exp / 50)) + 1
-    const newLevel = Math.floor(Math.sqrt(newTotalExp / 50)) + 1;
+    // 等級公式：每升一級所需分數 = 5000 × 2^(level-1)
+    // Lv1→2: 5000, Lv2→3: 10000, Lv3→4: 20000 ...
+    let newLevel = 1;
+    let cumulative = 0;
+    while (cumulative + 5000 * Math.pow(2, newLevel - 1) <= newTotalExp) {
+      cumulative += 5000 * Math.pow(2, newLevel - 1);
+      newLevel++;
+    }
     const levelUp = newLevel > user.current_level;
 
     db.prepare(

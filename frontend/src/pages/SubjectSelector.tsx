@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
@@ -6,6 +6,57 @@ import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import StreakFire from '../components/common/StreakFire';
 import { useTranslation } from '../i18n';
 import type { TheoryType } from '../types';
+
+// Level thresholds: 5000 × 2^(level-1) per level
+function levelThreshold(lv: number): number { return 5000 * Math.pow(2, lv - 1); }
+function expToLevel(exp: number): number {
+  let lv = 1;
+  let cumulative = 0;
+  while (cumulative + levelThreshold(lv) <= exp) { cumulative += levelThreshold(lv); lv++; }
+  return lv;
+}
+function expInLevel(exp: number, lv: number): number {
+  let cumulative = 0;
+  for (let i = 1; i < lv; i++) cumulative += levelThreshold(i);
+  return exp - cumulative;
+}
+
+const ScoreCard = memo(function ScoreCard({ exp, level, streak }: { exp: number; level: number; streak: number }) {
+  const computedLv = expToLevel(exp);
+  const inLevel = expInLevel(exp, computedLv);
+  const needed = levelThreshold(computedLv);
+  const pct = Math.min(100, (inLevel / needed) * 100);
+  return (
+    <div className="card mb-6 flex items-center gap-4 py-4">
+      <div className="text-center min-w-[56px]">
+        <div className="text-xs text-gray-400 font-semibold">等級</div>
+        <div className="text-3xl font-black text-mushroom-600">{computedLv}</div>
+      </div>
+      <div className="flex-1">
+        <div className="flex justify-between items-baseline mb-1">
+          <span className="text-xs text-gray-400">累計分數</span>
+          <span className="text-xl font-black text-mushroom-500">{exp.toLocaleString()}</span>
+        </div>
+        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-mushroom-400 rounded-full transition-all duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+          <span>{inLevel.toLocaleString()} / {needed.toLocaleString()}</span>
+          <span>→ Lv.{computedLv + 1}</span>
+        </div>
+      </div>
+      {streak > 0 && (
+        <div className="text-center min-w-[48px]">
+          <div className="text-xs text-gray-400">連勝</div>
+          <div className="text-lg font-black text-orange-500">🔥{streak}</div>
+        </div>
+      )}
+    </div>
+  );
+});
 
 const THEORY_TYPES: { key: TheoryType; label: string; icon: string; desc: string; highlight?: boolean }[] = [
   { key: 'mixed',         label: '綜合練習', icon: '🎯', desc: '四大主題各取 2-3 題，最多元的練習', highlight: true },
@@ -38,29 +89,20 @@ export default function SubjectSelector() {
   return (
     <div className="min-h-screen px-4 py-8 max-w-2xl mx-auto">
       {/* 頂部列 */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-black text-mushroom-600">🍄 RedMushroom</h1>
-          <p className="text-gray-500 text-sm flex items-center gap-2">
-            {user?.is_sen_mode
-              ? <>🌟 輕鬆學習模式</>
-              : <>Lv.{user?.current_level} · {user?.display_name}</>}
-            <StreakFire days={user?.streak_days ?? 0} />
-          </p>
+          {user?.is_sen_mode
+            ? <p className="text-sm text-mushroom-500">🌟 輕鬆學習模式</p>
+            : <p className="text-sm text-gray-500">{user?.display_name}</p>}
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
-          <button
-            className="btn-secondary text-sm py-2 px-4"
-            onClick={() => navigate('/dashboard')}
-          >
+          <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/dashboard')}>
             📊 {t('nav.dashboard')}
           </button>
           {user?.role === 'teacher' && (
-            <button
-              className="btn-secondary text-sm py-2 px-4"
-              onClick={() => navigate('/admin')}
-            >
+            <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/admin')}>
               👩‍🏫 {t('nav.admin')}
             </button>
           )}
@@ -69,6 +111,11 @@ export default function SubjectSelector() {
           </button>
         </div>
       </div>
+
+      {/* 分數卡片 */}
+      {user && !user.is_sen_mode && (
+        <ScoreCard exp={user.total_exp} level={user.current_level} streak={user.streak_days} />
+      )}
 
       <h2 className="text-xl font-bold text-center text-gray-700 mb-6">
         今天要練習哪個主題？
