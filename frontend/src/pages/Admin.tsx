@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 interface StudentRow {
@@ -19,6 +20,7 @@ interface DashboardData {
 
 export default function Admin() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
 
   useEffect(() => {
@@ -49,7 +51,10 @@ export default function Admin() {
   return (
     <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-black text-mushroom-600">👩‍🏫 老師管理台</h1>
+        <div className="flex items-center gap-3">
+          <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
+          <h1 className="text-2xl font-black text-mushroom-600">👩‍🏫 老師管理台</h1>
+        </div>
         <button className="btn-secondary text-sm" onClick={downloadCsv}>
           📥 下載班級報告 CSV
         </button>

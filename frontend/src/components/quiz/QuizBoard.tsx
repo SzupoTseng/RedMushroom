@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../../context/QuizContext';
 import SortingDisplay from './SortingDisplay';
 import SpeechRecorder from './SpeechRecorder';
@@ -6,7 +7,8 @@ import { useConfig, useSenLayout } from '../../context/ConfigContext';
 import type { ZhuyinChar } from '../../types';
 
 export default function QuizBoard() {
-  const { state, submitAnswer, nextQuestion, finishQuiz } = useQuiz();
+  const { state, submitAnswer, nextQuestion, finishQuiz, resetQuiz } = useQuiz();
+  const navigate = useNavigate();
   const { showZhuyin } = useConfig();
   const sen = useSenLayout();
   const [selected, setSelected] = useState<string | null>(null);
@@ -51,11 +53,18 @@ export default function QuizBoard() {
       className={`min-h-screen px-4 py-6 ${sen ? 'quiz-board-sen' : 'max-w-2xl'} mx-auto flex flex-col`}
       data-sen={sen ? '1' : '0'}
     >
-      {/* 進度條 */}
+      {/* 進度條 + 離開按鈕 */}
       <div className="mb-4">
         <div className={`flex justify-between mb-1 ${sen ? 'text-base' : 'text-sm'} text-gray-500`}>
+          <button
+            className="text-gray-400 hover:text-mushroom-600 text-xs px-2 py-1 rounded border border-gray-200 hover:border-mushroom-300 transition-colors"
+            onClick={() => { resetQuiz(); navigate('/'); }}
+            title="中途離開不計分"
+          >
+            ← 離開
+          </button>
           <span>第 {currentIndex + 1} 題 / 共 {questions.length} 題</span>
-          <span>{question.theory_type}</span>
+          <span className="text-xs">{question.theory_type}</span>
         </div>
         <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
           <div

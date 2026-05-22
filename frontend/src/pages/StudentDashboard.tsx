@@ -74,9 +74,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen px-4 py-8 max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
-        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 text-2xl">
-          ←
-        </button>
+        <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
         <h1 className="text-2xl font-black text-mushroom-600">📊 我的成長記錄</h1>
       </div>
 

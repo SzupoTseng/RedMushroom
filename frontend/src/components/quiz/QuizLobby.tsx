@@ -15,11 +15,11 @@ export default function QuizLobby() {
 
   return (
     <div className="min-h-screen px-4 py-8 max-w-xl mx-auto">
-      <button onClick={() => navigate('/')} className="text-gray-400 text-2xl mb-6 block">←</button>
-
-      <h1 className="text-2xl font-black text-center text-mushroom-600 mb-8">
-        選擇練習主題
-      </h1>
+      <div className="flex items-center justify-between mb-8">
+        <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
+        <h1 className="text-2xl font-black text-mushroom-600">選擇練習主題</h1>
+        <div className="w-20" />
+      </div>
 
       {state.error && (
         <div className="bg-red-100 text-red-700 rounded-2xl p-4 mb-6 text-center">

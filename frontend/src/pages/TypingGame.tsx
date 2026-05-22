@@ -340,7 +340,7 @@ export default function TypingGame() {
           </div>
         </div>
         <button className="btn-primary text-xl px-10 py-4" onClick={startGame}>開始遊戲！</button>
-        <button className="mt-3 text-indigo-300 underline text-sm" onClick={() => navigate('/')}>返回主頁</button>
+        <button className="mt-3 btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
       </div>
     );
   }
@@ -355,7 +355,7 @@ export default function TypingGame() {
         <div className="text-6xl font-black text-yellow-300 mb-1">{uiScore}</div>
         <p className="text-indigo-200 mb-8 text-sm">分</p>
         <button className="btn-primary text-xl px-10 py-4 mb-3" onClick={startGame}>再玩一次</button>
-        <button className="text-indigo-300 underline text-sm" onClick={() => navigate('/')}>返回主頁</button>
+        <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
       </div>
     );
   }
@@ -370,7 +370,7 @@ export default function TypingGame() {
         <div className="text-6xl font-black text-yellow-300 mb-1">{uiScore}</div>
         <p className="text-indigo-200 mb-8 text-sm">分</p>
         <button className="btn-primary text-xl px-10 py-4 mb-3" onClick={startGame}>再挑戰一次</button>
-        <button className="text-indigo-300 underline text-sm" onClick={() => navigate('/')}>返回主頁</button>
+        <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/')}>← 返回</button>
       </div>
     );
   }
@@ -411,7 +411,7 @@ export default function TypingGame() {
         </div>
         {/* Score */}
         <div className="text-white font-black text-xl min-w-[3rem] text-right">{uiScore}</div>
-        <button onClick={() => navigate('/')} className="text-white/30 hover:text-white text-xs">✕</button>
+        <button onClick={() => navigate('/')} className="text-white/40 hover:text-white text-xs px-2 py-1 rounded border border-white/20 hover:border-white/60 transition-colors">← 離開</button>
       </div>
 
       {/* Ground */}
