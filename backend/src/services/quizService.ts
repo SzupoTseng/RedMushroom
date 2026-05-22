@@ -565,9 +565,12 @@ export class QuizService {
     }
     const levelUp = newLevel > user.current_level;
 
+    // 經驗值（total_exp）同時也以相同金額增加兌換獎品分數（reward_points）
+    // 兩個系統獨立：total_exp 只增（升等用），reward_points 可花費（兌換用）
     db.prepare(
-      `UPDATE users SET total_exp = ?, current_level = ? WHERE user_id = ?`
-    ).run(newTotalExp, newLevel, userId);
+      `UPDATE users SET total_exp = ?, current_level = ?,
+              reward_points = reward_points + ? WHERE user_id = ?`
+    ).run(newTotalExp, newLevel, expGained, userId);
 
     return { expGained, levelUp, newLevel };
   }

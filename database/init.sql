@@ -18,9 +18,10 @@ CREATE TABLE IF NOT EXISTS users (
   grade         TEXT    NOT NULL DEFAULT '3',
   subject       TEXT    NOT NULL DEFAULT 'chinese',
   -- Stage 7: RPG
-  total_exp     INTEGER NOT NULL DEFAULT 0,
-  current_level INTEGER NOT NULL DEFAULT 1,
-  praise_streak INTEGER NOT NULL DEFAULT 0,
+  total_exp       INTEGER NOT NULL DEFAULT 0, -- 經驗值：用於升等，只增不減
+  reward_points   INTEGER NOT NULL DEFAULT 0, -- 兌換獎品分數：可花費的獨立貨幣
+  current_level   INTEGER NOT NULL DEFAULT 1,
+  praise_streak   INTEGER NOT NULL DEFAULT 0,
   -- Stage 12A: 連勝
   last_quiz_date TEXT,
   streak_days   INTEGER NOT NULL DEFAULT 0,

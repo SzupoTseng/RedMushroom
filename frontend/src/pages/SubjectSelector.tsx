@@ -21,39 +21,54 @@ function expInLevel(exp: number, lv: number): number {
   return exp - cumulative;
 }
 
-const ScoreCard = memo(function ScoreCard({ exp, level, streak }: { exp: number; level: number; streak: number }) {
+const ScoreCard = memo(function ScoreCard({
+  exp, rewardPoints, level, streak,
+}: { exp: number; rewardPoints: number; level: number; streak: number }) {
   const computedLv = expToLevel(exp);
   const inLevel = expInLevel(exp, computedLv);
   const needed = levelThreshold(computedLv);
   const pct = Math.min(100, (inLevel / needed) * 100);
   return (
-    <div className="card mb-6 flex items-center gap-4 py-4">
-      <div className="text-center min-w-[56px]">
-        <div className="text-xs text-gray-400 font-semibold">等級</div>
-        <div className="text-3xl font-black text-mushroom-600">{computedLv}</div>
+    <div className="card mb-6 py-4 space-y-3">
+      {/* Row 1: level + EXP progress */}
+      <div className="flex items-center gap-4">
+        <div className="text-center min-w-[56px]">
+          <div className="text-xs text-gray-400 font-semibold">等級</div>
+          <div className="text-3xl font-black text-mushroom-600">{computedLv}</div>
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between items-baseline mb-1">
+            <span className="text-xs text-gray-400">經驗值</span>
+            <span className="text-lg font-black text-mushroom-500">{exp.toLocaleString()}</span>
+          </div>
+          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-mushroom-400 rounded-full transition-all duration-700"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+            <span>{inLevel.toLocaleString()} / {needed.toLocaleString()}</span>
+            <span>→ Lv.{computedLv + 1}</span>
+          </div>
+        </div>
+        {streak > 0 && (
+          <div className="text-center min-w-[44px]">
+            <div className="text-xs text-gray-400">連勝</div>
+            <div className="text-lg font-black text-orange-500">🔥{streak}</div>
+          </div>
+        )}
       </div>
-      <div className="flex-1">
-        <div className="flex justify-between items-baseline mb-1">
-          <span className="text-xs text-gray-400">累計分數</span>
-          <span className="text-xl font-black text-mushroom-500">{exp.toLocaleString()}</span>
+      {/* Row 2: reward points */}
+      <div className="flex items-center justify-between border-t pt-3">
+        <div>
+          <div className="text-xs text-gray-400">🎁 兌換獎品分數</div>
+          <div className="text-2xl font-black text-yellow-500">{rewardPoints.toLocaleString()}</div>
         </div>
-        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-mushroom-400 rounded-full transition-all duration-700"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-          <span>{inLevel.toLocaleString()} / {needed.toLocaleString()}</span>
-          <span>→ Lv.{computedLv + 1}</span>
+        <div className="text-xs text-gray-400 text-right max-w-[160px]">
+          與經驗值獨立<br/>用於兌換獎品
         </div>
       </div>
-      {streak > 0 && (
-        <div className="text-center min-w-[48px]">
-          <div className="text-xs text-gray-400">連勝</div>
-          <div className="text-lg font-black text-orange-500">🔥{streak}</div>
-        </div>
-      )}
     </div>
   );
 });
@@ -114,7 +129,12 @@ export default function SubjectSelector() {
 
       {/* 分數卡片 */}
       {user && !user.is_sen_mode && (
-        <ScoreCard exp={user.total_exp} level={user.current_level} streak={user.streak_days} />
+        <ScoreCard
+          exp={user.total_exp}
+          rewardPoints={user.reward_points ?? 0}
+          level={user.current_level}
+          streak={user.streak_days}
+        />
       )}
 
       <h2 className="text-xl font-bold text-center text-gray-700 mb-6">

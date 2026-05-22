@@ -23,3 +23,9 @@ ON quiz_details(session_id, question_id);
 
 INSERT OR IGNORE INTO db_migrations (version, description)
 VALUES (2, 'UNIQUE index on quiz_details(session_id, question_id)');
+
+-- v3: reward_points = 兌換獎品分數，獨立於 total_exp
+ALTER TABLE users ADD COLUMN reward_points INTEGER NOT NULL DEFAULT 0;
+
+INSERT OR IGNORE INTO db_migrations (version, description)
+VALUES (3, 'reward_points: separate spendable currency for reward shop');

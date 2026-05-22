@@ -5,7 +5,8 @@ export interface User {
   display_name: string;
   role: 'student' | 'teacher' | 'parent';
   grade: string;
-  total_exp: number;
+  total_exp: number;       // 經驗值：升等用，只增不減
+  reward_points: number;   // 兌換獎品分數：可花費的獨立貨幣
   current_level: number;
   streak_days: number;
   max_streak: number;

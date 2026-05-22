@@ -13,6 +13,7 @@ interface UserRow {
   role: string;
   grade: string;
   total_exp: number;
+  reward_points: number;
   current_level: number;
   streak_days: number;
   max_streak: number;
@@ -73,7 +74,7 @@ export async function login(req: Request, res: Response): Promise<void> {
   const db = getDb();
   const user = db.prepare(
     `SELECT user_id, username, password_hash, display_name, role, grade,
-            total_exp, current_level, streak_days, max_streak, is_sen_mode
+            total_exp, reward_points, current_level, streak_days, max_streak, is_sen_mode
      FROM users WHERE username = ?`
   ).get(username) as UserRow | undefined;
 
@@ -109,6 +110,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       role: user.role,
       grade: user.grade,
       total_exp: user.total_exp,
+      reward_points: user.reward_points,
       current_level: user.current_level,
       streak_days: user.streak_days,
       max_streak: user.max_streak,
