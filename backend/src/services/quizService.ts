@@ -546,9 +546,8 @@ export class QuizService {
     passed: boolean
   ): { expGained: number; levelUp: boolean; newLevel: number } {
     const db = this.db;
-    const baseExp = Math.floor(score * 0.5);
-    const passBonus = passed ? 20 : 0;
-    const expGained = baseExp + passBonus;
+    // 得幾分就加幾 EXP（1:1），通過加 10 分獎勵
+    const expGained = score + (passed ? 10 : 0);
 
     const user = db
       .prepare('SELECT total_exp, current_level FROM users WHERE user_id = ?')
