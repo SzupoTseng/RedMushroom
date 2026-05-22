@@ -125,7 +125,7 @@ export function getMe(req: Request, res: Response): void {
 
   const user = db.prepare(
     `SELECT u.user_id, u.username, u.display_name, u.role, u.grade,
-            u.total_exp, u.current_level, u.streak_days, u.max_streak, u.is_sen_mode,
+            u.total_exp, u.reward_points, u.current_level, u.streak_days, u.max_streak, u.is_sen_mode,
             s.accuracy, s.stability, s.versatility, s.cognition, s.endurance, s.fluency
      FROM users u
      LEFT JOIN user_stats s ON s.user_id = u.user_id

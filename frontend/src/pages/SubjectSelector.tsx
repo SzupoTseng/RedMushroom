@@ -83,11 +83,17 @@ const THEORY_TYPES: { key: TheoryType; label: string; icon: string; desc: string
 ];
 
 export default function SubjectSelector() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { startQuiz, state } = useQuiz();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [loading, setLoading] = useState<TheoryType | null>(null);
+
+  // 每次回到主頁都重新取得最新分數（避免測驗後分數沒更新）
+  useEffect(() => {
+    refreshUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (state.phase === 'QUIZ' || state.phase === 'LOADING') {

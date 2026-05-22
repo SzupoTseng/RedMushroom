@@ -35,6 +35,41 @@ router.get('/leaderboard', getLeaderboard);
 router.get('/pvp/classmates', pvpClassmates);
 router.post('/pvp/challenge', pvpCreateChallenge);
 
+// 通用遊戲得分紀錄（打字遊戲、其他迷你遊戲過關後呼叫）
+router.post('/game-score', (req, res) => {
+  try {
+    const userId = (req as import('express').Request).user!.user_id;
+    const { exp = 0, reward = 0, source = 'game' } = req.body as {
+      exp?: number; reward?: number; source?: string;
+    };
+    if (exp < 0 || reward < 0 || exp > 9999 || reward > 9999) {
+      res.status(400).json({ error: '分數超出合理範圍' });
+      return;
+    }
+    const db = require('../db/database').getDb();
+    const user = db.prepare('SELECT total_exp FROM users WHERE user_id = ?').get(userId) as { total_exp: number };
+    const newExp = user.total_exp + exp;
+
+    // Same level formula as quizService
+    let newLevel = 1;
+    let cumulative = 0;
+    while (cumulative + 5000 * Math.pow(2, newLevel - 1) <= newExp) {
+      cumulative += 5000 * Math.pow(2, newLevel - 1);
+      newLevel++;
+    }
+
+    db.prepare(
+      `UPDATE users SET total_exp = ?, current_level = ?,
+              reward_points = reward_points + ? WHERE user_id = ?`
+    ).run(newExp, newLevel, reward, userId);
+
+    res.json({ ok: true, total_exp: newExp, reward_points: reward, source });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '未知錯誤';
+    res.status(500).json({ error: msg });
+  }
+});
+
 // 打字遊戲語彙（從題庫抽取字＋注音）
 router.get('/vocab', (req, res) => {
   try {

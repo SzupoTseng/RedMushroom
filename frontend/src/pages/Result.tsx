@@ -21,7 +21,7 @@ interface PvpVerdict {
 
 export default function Result() {
   const { state, resetQuiz } = useQuiz();
-  const { token } = useAuth();
+  const { token, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [chestOpen, setChestOpen] = useState(true);
   const [pvpVerdict, setPvpVerdict] = useState<PvpVerdict | null>(null);
@@ -31,6 +31,12 @@ export default function Result() {
       navigate('/');
     }
   }, [state.phase, navigate]);
+
+  // 進入結果頁時就刷新分數，確保回首頁後顯示最新資料
+  useEffect(() => {
+    if (state.phase === 'RESULT') refreshUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
 
   // PvP 比對：若有未消費的 pvp_target，撈本場 session 細節再比對
   useEffect(() => {

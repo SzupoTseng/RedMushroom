@@ -10,6 +10,7 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 interface RegisterData {
@@ -89,8 +90,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  // 重新從後端取得最新使用者資料（分數、等級等）
+  const refreshUser = useCallback(async () => {
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (!savedToken) return;
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${savedToken}` },
+      });
+      if (res.ok) {
+        const data = await res.json() as { user: User };
+        if (data?.user) setUser(data.user);
+      }
+    } catch { /* silent */ }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

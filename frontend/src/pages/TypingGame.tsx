@@ -129,12 +129,24 @@ export default function TypingGame() {
       .catch(() => {});
   }, []);
 
+  // ── Save score to backend (每個字 3 兌換分數 + 1 EXP) ───────────────────────
+  const saveCharScore = useCallback(() => {
+    const token = localStorage.getItem('rm_token');
+    if (!token) return;
+    fetch('/api/quiz/game-score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ exp: 1, reward: 3, source: 'typing-game' }),
+    }).catch(() => {});
+  }, []);
+
   // ── Shoot ──────────────────────────────────────────────────────────────────
   const shoot = useCallback((c: FallingChar) => {
     if (c.exploding) return;
     const L = loopRef.current;
     c.exploding = true;
     c.explodeAt = Date.now();
+    saveCharScore();
     L.combo += 1;
     L.cleared += 1;
     const pts = 10 + Math.max(0, (L.combo - 1) * 5);
@@ -169,7 +181,7 @@ export default function TypingGame() {
     }
 
     setRenderKey(k => k + 1);
-  }, []);
+  }, [saveCharScore]);
 
   // ── Match by Chinese char ─────────────────────────────────────────────────
   const matchChar = useCallback((ch: string) => {
