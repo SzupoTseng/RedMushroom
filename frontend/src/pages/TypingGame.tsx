@@ -239,12 +239,13 @@ export default function TypingGame() {
         const pool = wordsRef.current;
         const w = pool[Math.floor(Math.random() * pool.length)];
         const baseRotSp = cfg.rotSp;
+        const willRotate = baseRotSp > 0;
         L.chars.push({
           id: ++L.idSeq, char: w.char, py: w.py,
           x: 8 + Math.random() * 84, y: -8,
           speed: cfg.speed * (0.85 + Math.random() * 0.3),
-          rotation: Math.random() * 360,
-          rotSp: baseRotSp > 0 ? baseRotSp * (Math.random() < 0.5 ? 1 : -1) : 0,
+          rotation: willRotate ? Math.random() * 360 : 0,   // 不旋轉→保持正方向
+          rotSp: willRotate ? baseRotSp * (Math.random() < 0.5 ? 1 : -1) : 0,
           exploding: false, explodeAt: 0,
         });
       }
