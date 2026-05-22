@@ -84,6 +84,79 @@ export class QuizService {
   }
 
   /**
+   * 移除選項+正解完全相同的重複題，用題庫中其他不重複的題補足。
+   * 「只換人名但選項相同」的句型題會被這裡過濾掉。
+   */
+  private deduplicateByContent(ids: number[], seenIds: Set<number>): number[] {
+    if (ids.length === 0) return ids;
+    const db = this.db;
+    const ph = ids.map(() => '?').join(',');
+    const rows = db
+      .prepare(
+        `SELECT question_id, correct_answer, options, subject, theory_type, category_type
+         FROM questions WHERE question_id IN (${ph})`
+      )
+      .all(...ids) as Array<{
+        question_id: number;
+        correct_answer: string;
+        options: string;
+        subject: string;
+        theory_type: string;
+        category_type: string;
+      }>;
+
+    const contentSeen = new Set<string>();
+    const kept: number[] = [];
+    const dropped: typeof rows = [];
+
+    for (const r of rows) {
+      const key = `${r.correct_answer}||${r.options}`;
+      if (!contentSeen.has(key)) {
+        contentSeen.add(key);
+        kept.push(r.question_id);
+      } else {
+        dropped.push(r);
+      }
+    }
+
+    if (dropped.length === 0) return kept;
+
+    // Fill gaps: pick from the same (theory, category, subject) with different content
+    const alreadyUsed = new Set([...ids]);
+    for (const d of dropped) {
+      const alternatives = db
+        .prepare(
+          `SELECT question_id, correct_answer, options FROM questions
+           WHERE subject = ? AND theory_type = ? AND category_type = ?
+             AND question_id NOT IN (${ids.map(() => '?').join(',')})
+           ORDER BY RANDOM() LIMIT 30`
+        )
+        .all(d.subject, d.theory_type, d.category_type, ...ids) as Array<{
+          question_id: number; correct_answer: string; options: string;
+        }>;
+
+      let filled = false;
+      for (const alt of alternatives) {
+        if (alreadyUsed.has(alt.question_id)) continue;
+        const key = `${alt.correct_answer}||${alt.options}`;
+        if (!contentSeen.has(key)) {
+          contentSeen.add(key);
+          kept.push(alt.question_id);
+          alreadyUsed.add(alt.question_id);
+          filled = true;
+          break;
+        }
+      }
+      if (!filled) {
+        // No unique alternative found — just include the original to keep count
+        kept.push(d.question_id);
+      }
+    }
+
+    return kept;
+  }
+
+  /**
    * 取得使用者最近 6 小時內已答過的題目 ID 集合，用於下一場抽題時排除。
    * 「重複」由時間窗界定，而非永久——避免題庫被很快「打完」。
    */
@@ -218,6 +291,10 @@ export class QuizService {
       const useBuckets = freshTotal >= questionCount ? fresh : buckets;
       selectedIds = this.pickDiverseQuestions(useBuckets, questionCount);
     }
+
+    // 移除「選項+正解完全相同」的重複題（例如只換了人名但選項相同的句型題）。
+    // 優先保留已選的，用同一 category 的其他題補上缺口。
+    selectedIds = this.deduplicateByContent(selectedIds, seenIds);
     const placeholders = selectedIds.map(() => '?').join(',');
     const questions = db
       .prepare(
