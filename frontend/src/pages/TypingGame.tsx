@@ -10,23 +10,31 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// ── Speed zones ───────────────────────────────────────────────────────────────
+// 1-10: BASE_SPEED  11-50: BASE_SPEED × 1.2  51-100: BASE_SPEED × 1.3
+const BASE_SPEED = 0.03;
+function zoneSpeed(lv: number) {
+  if (lv <= 10) return BASE_SPEED;
+  if (lv <= 50) return BASE_SPEED * 1.2;
+  return BASE_SPEED * 1.3;
+}
+
 // ── Config per level ──────────────────────────────────────────────────────────
 function levelConfig(lv: number) {
+  const speed = zoneSpeed(lv);
+
   if (lv <= 10) {
-    // 1-10關：無旋轉，緩慢，目標 lv+4（5→10個）
-    const target = lv + 4;                         // 5, 6, 7, 8, 9, 10
-    const speed  = 0.02 + lv * 0.004;             // 0.024 → 0.060
-    const spawnMs = Math.max(1800, 3800 - lv * 200);
+    // 1-10關：無旋轉，固定慢速，目標 lv+4（5→14個）
+    const target      = lv + 4;
+    const spawnMs     = Math.max(1800, 3600 - lv * 180);
     const maxOnScreen = Math.ceil(lv / 2) + 1;    // 2 → 6
-    const rotSp  = 0;                              // 無旋轉
-    return { target, speed, spawnMs, maxOnScreen, rotSp };
+    return { target, speed, spawnMs, maxOnScreen, rotSp: 0 };
   } else {
-    // 11-100關：目標 = 關數，緩慢旋轉（隨關卡加快）
-    const target = lv;                             // 11, 12, … 100
-    const speed  = 0.06 + (lv - 10) * 0.003;     // 0.063 → 0.330
-    const spawnMs = Math.max(800, 1800 - (lv - 10) * 11);
-    const maxOnScreen = Math.min(12, Math.ceil(lv / 10) + 4); // 5 → 12
-    const rotSp  = 0.3 + (lv - 10) * 0.02;       // 0.5 → 2.1 deg/frame (slow → moderate)
+    // 11-100關：緩慢旋轉，目標 = 關數
+    const target      = lv;
+    const spawnMs     = Math.max(800, 1800 - (lv - 10) * 11);
+    const maxOnScreen = Math.min(12, Math.ceil(lv / 10) + 4);
+    const rotSp       = 0.3 + (lv - 10) * 0.02;  // 0.5 → 2.1 deg/frame
     return { target, speed, spawnMs, maxOnScreen, rotSp };
   }
 }
@@ -295,18 +303,21 @@ export default function TypingGame() {
           <div className="flex items-start gap-2"><span>🍄</span><span>三條命，字掉到地面扣一條命</span></div>
           <div className="flex items-start gap-2"><span>🏆</span><span>1–10 關，消滅足夠數量的字就過關</span></div>
         </div>
-        <div className="flex gap-4 mb-6 text-xs text-indigo-100 w-full max-w-sm">
-          <div className="flex-1 bg-indigo-800/60 rounded-xl p-3">
-            <div className="font-bold text-sm mb-1 text-white">第 1–10 關</div>
+        <div className="grid grid-cols-3 gap-2 mb-6 text-xs text-indigo-100 w-full max-w-sm">
+          <div className="bg-indigo-800/60 rounded-xl p-2.5 text-center">
+            <div className="font-bold text-white mb-1">第 1–10 關</div>
             <div>🔵 無旋轉</div>
-            <div>目標：5～10 個字</div>
-            <div>速度：慢</div>
+            <div className="text-yellow-200">慢速</div>
           </div>
-          <div className="flex-1 bg-purple-800/60 rounded-xl p-3">
-            <div className="font-bold text-sm mb-1 text-white">第 11–100 關</div>
+          <div className="bg-purple-800/60 rounded-xl p-2.5 text-center">
+            <div className="font-bold text-white mb-1">第 11–50 關</div>
             <div>🌀 緩慢旋轉</div>
-            <div>目標：關卡數個字</div>
-            <div>速度：逐漸加快</div>
+            <div className="text-yellow-200">慢 ×1.2</div>
+          </div>
+          <div className="bg-pink-900/60 rounded-xl p-2.5 text-center">
+            <div className="font-bold text-white mb-1">第 51–100 關</div>
+            <div>🌀 旋轉</div>
+            <div className="text-yellow-200">慢 ×1.3</div>
           </div>
         </div>
         <button className="btn-primary text-xl px-10 py-4" onClick={startGame}>開始遊戲！</button>
