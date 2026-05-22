@@ -1,17 +1,35 @@
 /**
- * 注音打字遊戲
+ * 注音打字遊戲 — 關卡版
  *
- * IME の動作:
- * - compositionupdate: ユーザーが注音を入力中 → e.data に現在の注音が入る
- *   例: ㄏ → ㄏㄠ → ㄏㄠˇ → "好"
- * - compositionend: 漢字確定 → e.data に漢字が入る
- *
- * ゲームのマッチ: 確定した**漢字**で照合。
- * ディスプレイ: compositionupdate.data（注音）をリアルタイム表示。
- * → 中文輸入法 ON のまま遊べる。
+ * - 1-10 關，無旋轉
+ * - 每關目標：第 N 關消滅 (N + 4) 隻，最多 10 隻
+ * - 速度：第 1 關最慢，第 10 關才接近原速度的一半
+ * - 同時最多 N/2 + 1 個字在畫面（低關卡字少、不混亂）
+ * - IME ON 直接玩，compositionend 取得漢字配對
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// ── Config per level ──────────────────────────────────────────────────────────
+function levelConfig(lv: number) {
+  if (lv <= 10) {
+    // 1-10關：無旋轉，緩慢，目標 lv+4（5→10個）
+    const target = lv + 4;                         // 5, 6, 7, 8, 9, 10
+    const speed  = 0.02 + lv * 0.004;             // 0.024 → 0.060
+    const spawnMs = Math.max(1800, 3800 - lv * 200);
+    const maxOnScreen = Math.ceil(lv / 2) + 1;    // 2 → 6
+    const rotSp  = 0;                              // 無旋轉
+    return { target, speed, spawnMs, maxOnScreen, rotSp };
+  } else {
+    // 11-100關：目標 = 關數，緩慢旋轉（隨關卡加快）
+    const target = lv;                             // 11, 12, … 100
+    const speed  = 0.06 + (lv - 10) * 0.003;     // 0.063 → 0.330
+    const spawnMs = Math.max(800, 1800 - (lv - 10) * 11);
+    const maxOnScreen = Math.min(12, Math.ceil(lv / 10) + 4); // 5 → 12
+    const rotSp  = 0.3 + (lv - 10) * 0.02;       // 0.5 → 2.1 deg/frame (slow → moderate)
+    return { target, speed, spawnMs, maxOnScreen, rotSp };
+  }
+}
 
 // ── Fallback word bank ────────────────────────────────────────────────────────
 const FALLBACK_WORDS = [
@@ -29,42 +47,63 @@ const FALLBACK_WORDS = [
   { char: '學', py: 'ㄒㄩㄝˊ' }, { char: '說', py: 'ㄕㄨㄛ' },
   { char: '走', py: 'ㄗㄡˇ' }, { char: '跑', py: 'ㄆㄠˇ' },
   { char: '愛', py: 'ㄞˋ' }, { char: '家', py: 'ㄐㄧㄚ' },
+  { char: '心', py: 'ㄒㄧㄣ' }, { char: '手', py: 'ㄕㄡˇ' },
+  { char: '口', py: 'ㄎㄡˇ' }, { char: '耳', py: 'ㄦˇ' },
+  { char: '眼', py: 'ㄧㄢˇ' }, { char: '頭', py: 'ㄊㄡˊ' },
+  { char: '新', py: 'ㄒㄧㄣ' }, { char: '舊', py: 'ㄐㄧㄡˋ' },
+  { char: '笑', py: 'ㄒㄧㄠˋ' }, { char: '哭', py: 'ㄎㄨ' },
+  { char: '魚', py: 'ㄩˊ' }, { char: '鳥', py: 'ㄋㄧㄠˇ' },
 ];
 
 interface FallingChar {
   id: number; char: string; py: string;
   x: number; y: number; speed: number;
-  rotation: number; rotSp: number;
+  rotation: number; rotSp: number;     // rotSp=0 → no rotation (levels 1-10)
   exploding: boolean; explodeAt: number;
 }
 
 const MAX_LIVES = 3;
-const SPAWN_MS = 2000;
+const MAX_LEVEL = 100;
 
 export default function TypingGame() {
   const navigate = useNavigate();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const stateRef = useRef<{
-    chars: FallingChar[]; idSeq: number; lastSpawn: number;
-    running: boolean; frame: number;
-  }>({ chars: [], idSeq: 0, lastSpawn: 0, running: false, frame: 0 });
+  const inputElRef = useRef<HTMLInputElement>(null);
+
+  // Game loop mutable state (not React state to avoid re-render overhead)
+  const loopRef = useRef<{
+    chars: FallingChar[];
+    idSeq: number;
+    lastSpawn: number;
+    running: boolean;
+    raf: number;
+    cleared: number;   // chars destroyed this level
+    lives: number;
+    score: number;
+    combo: number;
+    level: number;
+  }>({
+    chars: [], idSeq: 0, lastSpawn: 0,
+    running: false, raf: 0,
+    cleared: 0, lives: MAX_LIVES, score: 0, combo: 0, level: 1,
+  });
 
   const wordsRef = useRef(FALLBACK_WORDS);
+
+  // React state for rendering
   const [renderKey, setRenderKey] = useState(0);
-  const [lives, setLives] = useState(MAX_LIVES);
-  const [score, setScore] = useState(0);
-  const [display, setDisplay] = useState('');   // 入力中の注音
+  const [uiLives, setUiLives] = useState(MAX_LIVES);
+  const [uiScore, setUiScore] = useState(0);
+  const [uiLevel, setUiLevel] = useState(1);
+  const [uiCleared, setUiCleared] = useState(0);
+  const [uiTarget, setUiTarget] = useState(levelConfig(1).target);
+  const [display, setDisplay] = useState('');
   const [shotTarget, setShotTarget] = useState<{ x: number; y: number } | null>(null);
-  const [gameOver, setGameOver] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [comboFlash, setComboFlash] = useState('');
   const [wrongFlash, setWrongFlash] = useState(false);
+  const [comboFlash, setComboFlash] = useState('');
+  const [levelUpFlash, setLevelUpFlash] = useState('');
+  const [phase, setPhase] = useState<'start' | 'play' | 'gameover' | 'win'>('start');
 
-  const livesRef = useRef(MAX_LIVES);
-  const scoreRef = useRef(0);
-  const comboRef = useRef(0);
-
-  // ── Fetch vocab from DB ────────────────────────────────────────────────────
+  // Fetch vocab
   useEffect(() => {
     const token = localStorage.getItem('rm_token');
     if (!token) return;
@@ -76,250 +115,303 @@ export default function TypingGame() {
       .catch(() => {});
   }, []);
 
-  // ── Shoot a falling character ─────────────────────────────────────────────
+  // ── Shoot ──────────────────────────────────────────────────────────────────
   const shoot = useCallback((c: FallingChar) => {
     if (c.exploding) return;
+    const L = loopRef.current;
     c.exploding = true;
     c.explodeAt = Date.now();
-    comboRef.current += 1;
-    const pts = 10 + Math.max(0, (comboRef.current - 1) * 5);
-    scoreRef.current += pts;
-    setScore(scoreRef.current);
+    L.combo += 1;
+    L.cleared += 1;
+    const pts = 10 + Math.max(0, (L.combo - 1) * 5);
+    L.score += pts;
+    setUiScore(L.score);
+    setUiCleared(L.cleared);
     setShotTarget({ x: c.x, y: c.y });
     setTimeout(() => setShotTarget(null), 400);
-    if (comboRef.current >= 3) {
-      setComboFlash(`${comboRef.current}連擊！ +${pts}`);
+    if (L.combo >= 3) {
+      setComboFlash(`${L.combo}連擊！ +${pts}`);
       setTimeout(() => setComboFlash(''), 900);
     }
+
+    // Level up check
+    const cfg = levelConfig(L.level);
+    if (L.cleared >= cfg.target) {
+      if (L.level >= MAX_LEVEL) {
+        L.running = false;
+        setPhase('win');
+        return;
+      }
+      L.level += 1;
+      L.cleared = 0;
+      L.chars = []; // clear remaining chars
+      L.lastSpawn = 0;
+      const newCfg = levelConfig(L.level);
+      setUiLevel(L.level);
+      setUiCleared(0);
+      setUiTarget(newCfg.target);
+      setLevelUpFlash(`第 ${L.level} 關！`);
+      setTimeout(() => setLevelUpFlash(''), 1500);
+    }
+
     setRenderKey(k => k + 1);
   }, []);
 
-  // ── Match by Chinese character (after IME confirms) ───────────────────────
+  // ── Match by Chinese char ─────────────────────────────────────────────────
   const matchChar = useCallback((ch: string) => {
     if (!ch) return;
-    const s = stateRef.current;
-    const target = s.chars.find(c => !c.exploding && c.char === ch.trim());
+    const L = loopRef.current;
+    const target = L.chars.find(c => !c.exploding && c.char === ch.trim());
     if (target) {
       shoot(target);
     } else {
-      // Wrong character — flash red
-      comboRef.current = 0;
+      L.combo = 0;
       setWrongFlash(true);
       setTimeout(() => setWrongFlash(false), 300);
     }
   }, [shoot]);
 
-  // ── IME-aware input event handling ───────────────────────────────────────
+  // ── IME events ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!started || gameOver) return;
-    const el = inputRef.current;
+    if (phase !== 'play') return;
+    const el = inputElRef.current;
     if (!el) return;
     el.focus();
 
-    // Show bopomofo in real-time as user types (before character confirmation)
-    const onCompositionUpdate = (e: CompositionEvent) => {
-      setDisplay(e.data || '');
+    const onCompUpdate = (e: CompositionEvent) => setDisplay(e.data || '');
+    const onCompEnd = (e: CompositionEvent) => {
+      setDisplay(''); el.value = ''; matchChar(e.data);
     };
-
-    // Character confirmed by IME
-    const onCompositionEnd = (e: CompositionEvent) => {
-      setDisplay('');
-      el.value = '';
-      matchChar(e.data);
-    };
-
-    // Handle direct input without IME (e.g., paste or non-composition input)
     const onInput = (e: Event) => {
       const ev = e as InputEvent;
       if (ev.isComposing) return;
       const val = el.value.trim();
       if (val) { matchChar(val); el.value = ''; setDisplay(''); }
     };
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') navigate('/');
     };
+    const refocus = () => setTimeout(() => el.focus(), 0);
 
-    el.addEventListener('compositionupdate', onCompositionUpdate);
-    el.addEventListener('compositionend', onCompositionEnd);
+    el.addEventListener('compositionupdate', onCompUpdate);
+    el.addEventListener('compositionend', onCompEnd);
     el.addEventListener('input', onInput);
     el.addEventListener('keydown', onKeyDown);
-
-    // Refocus if user clicks elsewhere
-    const refocus = () => setTimeout(() => el.focus(), 0);
     document.addEventListener('click', refocus);
 
     return () => {
-      el.removeEventListener('compositionupdate', onCompositionUpdate);
-      el.removeEventListener('compositionend', onCompositionEnd);
+      el.removeEventListener('compositionupdate', onCompUpdate);
+      el.removeEventListener('compositionend', onCompEnd);
       el.removeEventListener('input', onInput);
       el.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('click', refocus);
     };
-  }, [started, gameOver, matchChar, navigate]);
+  }, [phase, matchChar, navigate]);
 
-  // ── Game loop ─────────────────────────────────────────────────────────────
+  // ── Game loop ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!started || gameOver) return;
-    const s = stateRef.current;
-    s.running = true;
+    if (phase !== 'play') return;
+    const L = loopRef.current;
+    L.running = true;
 
     const loop = (ts: number) => {
-      if (!s.running) return;
-      if (ts - s.lastSpawn > SPAWN_MS) {
-        s.lastSpawn = ts;
+      if (!L.running) return;
+      const cfg = levelConfig(L.level);
+
+      // Spawn — only if under max on-screen limit
+      const active = L.chars.filter(c => !c.exploding).length;
+      if (active < cfg.maxOnScreen && ts - L.lastSpawn > cfg.spawnMs) {
+        L.lastSpawn = ts;
         const pool = wordsRef.current;
         const w = pool[Math.floor(Math.random() * pool.length)];
-        s.chars.push({
-          id: ++s.idSeq, char: w.char, py: w.py,
+        const baseRotSp = cfg.rotSp;
+        L.chars.push({
+          id: ++L.idSeq, char: w.char, py: w.py,
           x: 8 + Math.random() * 84, y: -8,
-          speed: 0.06 + Math.random() * 0.05,
+          speed: cfg.speed * (0.85 + Math.random() * 0.3),
           rotation: Math.random() * 360,
-          rotSp: (Math.random() - 0.5) * 2,
+          rotSp: baseRotSp > 0 ? baseRotSp * (Math.random() < 0.5 ? 1 : -1) : 0,
           exploding: false, explodeAt: 0,
         });
       }
+
+      // Update
       const now = Date.now();
       let lostLife = false;
-      s.chars = s.chars.filter(c => {
+      L.chars = L.chars.filter(c => {
         if (c.exploding) return now - c.explodeAt < 500;
-        c.y += c.speed; c.rotation += c.rotSp;
+        c.y += c.speed;
+        c.rotation += c.rotSp;
         if (c.y > 100) { lostLife = true; return false; }
         return true;
       });
+
       if (lostLife) {
-        livesRef.current = Math.max(0, livesRef.current - 1);
-        comboRef.current = 0;
-        setLives(livesRef.current);
+        L.lives = Math.max(0, L.lives - 1);
+        L.combo = 0;
+        setUiLives(L.lives);
         setComboFlash('');
-        if (livesRef.current <= 0) { s.running = false; setGameOver(true); return; }
+        if (L.lives <= 0) { L.running = false; setPhase('gameover'); return; }
       }
+
       setRenderKey(k => k + 1);
-      s.frame = requestAnimationFrame(loop);
+      L.raf = requestAnimationFrame(loop);
     };
 
-    s.frame = requestAnimationFrame(loop);
-    return () => { s.running = false; cancelAnimationFrame(s.frame); };
-  }, [started, gameOver]);
+    L.raf = requestAnimationFrame(loop);
+    return () => { L.running = false; cancelAnimationFrame(L.raf); };
+  }, [phase]);
 
-  const restart = () => {
-    const s = stateRef.current;
-    s.chars = []; s.idSeq = 0; s.lastSpawn = 0;
-    livesRef.current = MAX_LIVES; scoreRef.current = 0; comboRef.current = 0;
-    setLives(MAX_LIVES); setScore(0); setDisplay(''); setComboFlash('');
-    setShotTarget(null); setGameOver(false); setStarted(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
+  // ── Start / restart ────────────────────────────────────────────────────────
+  const startGame = () => {
+    const L = loopRef.current;
+    L.chars = []; L.idSeq = 0; L.lastSpawn = 0;
+    L.cleared = 0; L.lives = MAX_LIVES; L.score = 0; L.combo = 0; L.level = 1;
+    const cfg = levelConfig(1);
+    setUiLives(MAX_LIVES); setUiScore(0); setUiLevel(1);
+    setUiCleared(0); setUiTarget(cfg.target);
+    setDisplay(''); setComboFlash(''); setLevelUpFlash('');
+    setShotTarget(null); setWrongFlash(false);
+    setPhase('play');
+    setTimeout(() => inputElRef.current?.focus(), 50);
   };
 
-  const chars = stateRef.current.chars;
+  const chars = loopRef.current.chars;
+  const cfg = levelConfig(uiLevel);
 
-  // ── Start screen ──────────────────────────────────────────────────────────
-  if (!started) {
+  // ── Start screen ───────────────────────────────────────────────────────────
+  if (phase === 'start') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-indigo-900 to-purple-900 text-white px-4">
         <div className="text-7xl mb-4">🍄</div>
         <h1 className="text-4xl font-black mb-2">注音打字遊戲</h1>
-        <p className="text-indigo-200 mb-6 text-center max-w-sm">
-          單字從天而降！用中文輸入法打出注音，消滅文字！<br />
-          掉到地面扣一條命，三條命用完就結束。
+        <p className="text-indigo-200 mb-5 text-center max-w-sm">
+          單字從天而降！用注音輸入法打出來，消滅它！<br />
+          闖過 10 關，每關越來越快！
         </p>
-        <div className="bg-indigo-800/60 rounded-xl px-5 py-4 mb-8 text-sm text-indigo-100 max-w-sm space-y-2">
-          <p>✅ <strong>開著中文輸入法</strong>照樣可以玩</p>
-          <p>🎹 看到文字下方的注音，用鍵盤打出來</p>
-          <p>✓ 打對就發射大砲！✗ 打錯沒有扣分</p>
-          <p>⌨️ 按 Esc 可離開遊戲</p>
+        <div className="bg-indigo-800/60 rounded-xl px-5 py-4 mb-6 text-sm text-indigo-100 max-w-sm space-y-1.5">
+          <div className="flex items-start gap-2"><span>✅</span><span><strong>開著中文輸入法</strong>照樣可以玩</span></div>
+          <div className="flex items-start gap-2"><span>🎯</span><span>看到文字，打出它的注音，大砲就會發射</span></div>
+          <div className="flex items-start gap-2"><span>🍄</span><span>三條命，字掉到地面扣一條命</span></div>
+          <div className="flex items-start gap-2"><span>🏆</span><span>1–10 關，消滅足夠數量的字就過關</span></div>
         </div>
-        <button className="btn-primary text-xl px-10 py-4" onClick={() => {
-          setStarted(true);
-          setTimeout(() => inputRef.current?.focus(), 50);
-        }}>
-          開始遊戲！
-        </button>
-        <button className="mt-3 text-indigo-300 underline text-sm" onClick={() => navigate('/')}>
-          返回主頁
-        </button>
+        <div className="flex gap-4 mb-6 text-xs text-indigo-100 w-full max-w-sm">
+          <div className="flex-1 bg-indigo-800/60 rounded-xl p-3">
+            <div className="font-bold text-sm mb-1 text-white">第 1–10 關</div>
+            <div>🔵 無旋轉</div>
+            <div>目標：5～10 個字</div>
+            <div>速度：慢</div>
+          </div>
+          <div className="flex-1 bg-purple-800/60 rounded-xl p-3">
+            <div className="font-bold text-sm mb-1 text-white">第 11–100 關</div>
+            <div>🌀 緩慢旋轉</div>
+            <div>目標：關卡數個字</div>
+            <div>速度：逐漸加快</div>
+          </div>
+        </div>
+        <button className="btn-primary text-xl px-10 py-4" onClick={startGame}>開始遊戲！</button>
+        <button className="mt-3 text-indigo-300 underline text-sm" onClick={() => navigate('/')}>返回主頁</button>
       </div>
     );
   }
 
-  // ── Game Over ─────────────────────────────────────────────────────────────
-  if (gameOver) {
+  // ── Game Over ──────────────────────────────────────────────────────────────
+  if (phase === 'gameover') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-indigo-900 to-purple-900 text-white px-4">
         <div className="text-6xl mb-4">💥</div>
-        <h1 className="text-4xl font-black mb-2">遊戲結束</h1>
-        <div className="text-6xl font-black text-yellow-300 mb-1">{score}</div>
+        <h1 className="text-4xl font-black mb-1">遊戲結束</h1>
+        <p className="text-indigo-300 mb-2">第 {uiLevel} 關 · 消滅 {uiCleared} 個</p>
+        <div className="text-6xl font-black text-yellow-300 mb-1">{uiScore}</div>
         <p className="text-indigo-200 mb-8 text-sm">分</p>
-        <button className="btn-primary text-xl px-10 py-4 mb-3" onClick={restart}>再玩一次</button>
+        <button className="btn-primary text-xl px-10 py-4 mb-3" onClick={startGame}>再玩一次</button>
         <button className="text-indigo-300 underline text-sm" onClick={() => navigate('/')}>返回主頁</button>
       </div>
     );
   }
 
-  // ── Game screen ───────────────────────────────────────────────────────────
+  // ── Win! ───────────────────────────────────────────────────────────────────
+  if (phase === 'win') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-yellow-800 to-indigo-900 text-white px-4">
+        <div className="text-7xl mb-4">🏆</div>
+        <h1 className="text-4xl font-black mb-1">恭喜過關！</h1>
+        <p className="text-yellow-200 mb-2">全 10 關完成！</p>
+        <div className="text-6xl font-black text-yellow-300 mb-1">{uiScore}</div>
+        <p className="text-indigo-200 mb-8 text-sm">分</p>
+        <button className="btn-primary text-xl px-10 py-4 mb-3" onClick={startGame}>再挑戰一次</button>
+        <button className="text-indigo-300 underline text-sm" onClick={() => navigate('/')}>返回主頁</button>
+      </div>
+    );
+  }
+
+  // ── Game screen ────────────────────────────────────────────────────────────
   return (
     <div
       className="relative w-full overflow-hidden select-none bg-gradient-to-b from-indigo-950 to-indigo-900"
       style={{ height: '100dvh' }}
-      onClick={() => inputRef.current?.focus()}
+      onClick={() => inputElRef.current?.focus()}
     >
-      {/* Actual input — focused, transparent, positioned at bottom to keep mobile IME happy */}
       <input
-        ref={inputRef}
+        ref={inputElRef}
         className="absolute bottom-4 left-1/2 w-1 h-1 opacity-0 pointer-events-none"
-        autoFocus
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
+        autoFocus autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
       />
 
       {/* HUD */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-2 bg-black/40">
-        <div className="flex gap-1">
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center gap-3 px-4 py-2 bg-black/40">
+        {/* Lives */}
+        <div className="flex gap-0.5">
           {Array.from({ length: MAX_LIVES }).map((_, i) => (
-            <span key={i} className={`text-2xl ${i < lives ? '' : 'opacity-20'}`}>🍄</span>
+            <span key={i} className={`text-xl ${i < uiLives ? '' : 'opacity-20'}`}>🍄</span>
           ))}
         </div>
-        <div className="text-white font-black text-2xl">{score}</div>
-        <button onClick={() => navigate('/')} className="text-white/40 hover:text-white text-xs px-2 py-1 rounded">
-          ✕ 離開
-        </button>
+        {/* Level progress */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between text-xs text-white/60 mb-0.5">
+            <span className="font-bold text-white">第 {uiLevel} 關</span>
+            <span>{uiCleared}/{cfg.target}</span>
+          </div>
+          <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-mushroom-400 rounded-full transition-all duration-300"
+              style={{ width: `${(uiCleared / cfg.target) * 100}%` }}
+            />
+          </div>
+        </div>
+        {/* Score */}
+        <div className="text-white font-black text-xl min-w-[3rem] text-right">{uiScore}</div>
+        <button onClick={() => navigate('/')} className="text-white/30 hover:text-white text-xs">✕</button>
       </div>
 
-      {/* Ground line */}
+      {/* Ground */}
       <div className="absolute bottom-24 left-0 right-0 h-px bg-mushroom-400/30 z-10" />
 
       {/* Cannon */}
-      <div className="absolute bottom-[5.5rem] left-1/2 z-10 text-4xl" style={{ transform: 'translateX(-50%) scaleX(-1)' }}>
-        🔫
-      </div>
+      <div className="absolute bottom-[5.5rem] left-1/2 z-10 text-4xl"
+           style={{ transform: 'translateX(-50%) scaleX(-1)' }}>🔫</div>
 
-      {/* Shot line */}
+      {/* Shot */}
       {shotTarget && (
-        <div
-          className="absolute left-1/2 bottom-[5.5rem] w-1 bg-yellow-300 rounded z-15"
-          style={{
-            height: `calc(${100 - shotTarget.y}% - 5.5rem)`,
-            transform: 'translateX(-50%)',
-            boxShadow: '0 0 10px #fcd34d',
-            animation: 'fade350 0.35s ease-out forwards',
-          }}
-        />
+        <div className="absolute left-1/2 bottom-[5.5rem] w-1 bg-yellow-300 rounded z-15"
+             style={{
+               height: `calc(${100 - shotTarget.y}% - 5.5rem)`,
+               transform: 'translateX(-50%)',
+               boxShadow: '0 0 10px #fcd34d',
+               animation: 'fade350 0.35s ease-out forwards',
+             }} />
       )}
 
       {/* Falling characters */}
       {chars.map(c => (
-        <div
-          key={c.id}
-          className="absolute z-10 flex flex-col items-center pointer-events-none"
-          style={{
-            left: `${c.x}%`, top: `${c.y}%`,
-            transform: `translate(-50%, -50%) rotate(${c.rotation}deg)`,
-            opacity: c.exploding ? 0 : 1,
-            transition: c.exploding ? 'opacity 0.3s' : 'none',
-          }}
-        >
+        <div key={c.id}
+             className="absolute z-10 flex flex-col items-center pointer-events-none"
+             style={{
+               left: `${c.x}%`, top: `${c.y}%`,
+               transform: `translate(-50%, -50%) rotate(${c.rotation}deg)`,
+               opacity: c.exploding ? 0 : 1,
+               transition: c.exploding ? 'opacity 0.3s' : 'none',
+             }}>
           <div className="text-4xl font-black leading-none"
                style={{ textShadow: '0 0 14px rgba(253,210,0,0.8)', color: '#fef3c7' }}>
             {c.char}
@@ -330,17 +422,23 @@ export default function TypingGame() {
         </div>
       ))}
 
-      {/* Combo flash */}
-      {comboFlash && (
+      {/* Overlays */}
+      {levelUpFlash && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-          <div className="text-3xl font-black text-yellow-300" style={{ textShadow: '0 0 20px #fcd34d' }}>
-            {comboFlash}
+          <div className="text-5xl font-black text-yellow-300 bg-black/50 px-8 py-4 rounded-3xl"
+               style={{ textShadow: '0 0 20px #fcd34d', animation: 'popIn 0.3s ease-out' }}>
+            {levelUpFlash}
           </div>
         </div>
       )}
+      {comboFlash && !levelUpFlash && (
+        <div className="absolute top-20 left-0 right-0 flex justify-center pointer-events-none z-25">
+          <div className="text-2xl font-black text-yellow-300">{comboFlash}</div>
+        </div>
+      )}
 
-      {/* Input display — shows bopomofo in real time during IME composition */}
-      <div className={`absolute bottom-0 left-0 right-0 z-20 py-3 px-4 flex items-center gap-3 transition-colors duration-150
+      {/* Input display */}
+      <div className={`absolute bottom-0 left-0 right-0 z-20 py-3 px-4 flex items-center gap-3 transition-colors
         ${wrongFlash ? 'bg-red-900/80' : 'bg-black/60'}`}>
         <span className="text-white/40 text-sm shrink-0">注音</span>
         <div className="flex-1 text-center text-3xl font-black tracking-widest min-h-[2.5rem] leading-tight text-yellow-200">
@@ -349,7 +447,8 @@ export default function TypingGame() {
       </div>
 
       <style>{`
-        @keyframes fade350 { from { opacity: 1 } to { opacity: 0 } }
+        @keyframes fade350 { from { opacity:1 } to { opacity:0 } }
+        @keyframes popIn { from { transform:scale(0.5); opacity:0 } to { transform:scale(1); opacity:1 } }
       `}</style>
     </div>
   );
