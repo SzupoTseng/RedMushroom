@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Question, ZhuyinChar } from '../../types';
 import { useConfig } from '../../context/ConfigContext';
+import SortingDisplay from './SortingDisplay';
 
 export interface QuestionDetail {
   question_id: number;
@@ -40,6 +41,13 @@ export default function ScoreModal({
 
   const handleRetrySelect = (key: string) => {
     if (retryResult !== null) return;   // already answered
+    setRetrySelected(key);
+    setRetryResult(key === retryDetail?.correct_answer);
+  };
+
+  // 排序題：拖曳後按確認順序就呼叫這裡（key 是 '1,2,3,4' 之類的序列）
+  const handleSortingConfirm = (key: string) => {
+    if (retryResult !== null) return;
     setRetrySelected(key);
     setRetryResult(key === retryDetail?.correct_answer);
   };
@@ -138,30 +146,50 @@ export default function ScoreModal({
               )}
             </div>
 
-            {/* 選項 */}
-            <div className="space-y-2 mb-3">
-              {Object.entries(retryDetail.options).map(([key, label]) => {
-                const isAns = key === retryDetail.correct_answer;
-                const isSel = retrySelected === key;
-                let cls = 'answer-btn text-sm py-2';
-                if (retryResult !== null && isAns) cls += ' answer-btn-correct';
-                else if (isSel && retryResult === false) cls += ' answer-btn-wrong';
+            {/* 選項：排序題用拖曳、單選題用按鈕 */}
+            {retryDetail.question_type === 'sorting' ? (
+              <div className="mb-3">
+                <SortingDisplay
+                  key={retryDetail.question_id}
+                  question={{
+                    question_id: retryDetail.question_id,
+                    content: retryDetail.content,
+                    options: retryDetail.options,
+                    question_type: 'sorting',
+                    theory_type: 'usage',
+                    category_type: 'social',
+                    score: 10,
+                    subject: 'chinese',
+                  } as Question}
+                  onConfirm={handleSortingConfirm}
+                  disabled={retryResult !== null}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2 mb-3">
+                {Object.entries(retryDetail.options).map(([key, label]) => {
+                  const isAns = key === retryDetail.correct_answer;
+                  const isSel = retrySelected === key;
+                  let cls = 'answer-btn text-sm py-2';
+                  if (retryResult !== null && isAns) cls += ' answer-btn-correct';
+                  else if (isSel && retryResult === false) cls += ' answer-btn-wrong';
 
-                return (
-                  <button
-                    key={key}
-                    onClick={() => handleRetrySelect(key)}
-                    disabled={retryResult !== null}
-                    className={cls}
-                  >
-                    <span className="inline-block w-6 h-6 rounded-full bg-gray-100 text-center leading-6 text-xs font-bold mr-2">
-                      {key}
-                    </span>
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleRetrySelect(key)}
+                      disabled={retryResult !== null}
+                      className={cls}
+                    >
+                      <span className="inline-block w-6 h-6 rounded-full bg-gray-100 text-center leading-6 text-xs font-bold mr-2">
+                        {key}
+                      </span>
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* 回饋 */}
             {retryResult !== null && (
