@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext';
 import { useAuth } from '../context/AuthContext';
-import ScoreModal from '../components/quiz/ScoreModal';
+import ScoreModal, { type QuestionDetail } from '../components/quiz/ScoreModal';
 import TreasureChestModal from '../components/common/TreasureChestModal';
 
 interface PvpTarget {
@@ -25,6 +25,7 @@ export default function Result() {
   const navigate = useNavigate();
   const [chestOpen, setChestOpen] = useState(true);
   const [pvpVerdict, setPvpVerdict] = useState<PvpVerdict | null>(null);
+  const [questionDetails, setQuestionDetails] = useState<QuestionDetail[]>([]);
 
   useEffect(() => {
     if (state.phase !== 'RESULT') {
@@ -32,11 +33,37 @@ export default function Result() {
     }
   }, [state.phase, navigate]);
 
-  // 進入結果頁時就刷新分數，確保回首頁後顯示最新資料
+  // 進入結果頁時就刷新分數，確保回首頁後顯示最新資料；同時拉取含 correct_answer 的題目詳情
   useEffect(() => {
-    if (state.phase === 'RESULT') refreshUser();
+    if (state.phase !== 'RESULT' || !state.sessionId || !token) return;
+    refreshUser();
+    fetch(`/api/quiz/session/${state.sessionId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: {
+        details?: Array<{
+          question_id: number;
+          correct_answer: string;
+          explanation: string;
+          question_type: string;
+          content: string;
+          options: string;
+        }>
+      } | null) => {
+        if (!data?.details) return;
+        setQuestionDetails(data.details.map(d => ({
+          question_id: d.question_id,
+          correct_answer: d.correct_answer,
+          explanation: d.explanation,
+          question_type: d.question_type,
+          content: JSON.parse(d.content),
+          options: JSON.parse(d.options),
+        })));
+      })
+      .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase]);
+  }, [state.phase, state.sessionId]);
 
   // PvP 比對：若有未消費的 pvp_target，撈本場 session 細節再比對
   useEffect(() => {
@@ -108,6 +135,7 @@ export default function Result() {
         questions={state.questions}
         results={state.results}
         answers={state.answers}
+        details={questionDetails}
         onRetry={() => { resetQuiz(); navigate('/'); }}
       />
 

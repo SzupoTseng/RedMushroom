@@ -626,17 +626,21 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    // 動詞和賓語必須配對，不能 Cartesian 展開（看音樂、聽遊戲 是錯的）
     theory_type: 'usage', category_type: 'leisure', question_type: 'sorting',
     prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.adv, '3': v.v, '4': v.what }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.adv}${v.v}${v.what}。`,
-    vars: {
-      s:    ['我', '弟弟', '姊姊', '同學'],
-      adv:  ['正在', '快樂地', '安靜地'],
-      v:    ['看', '聽', '玩'],
-      what: ['電影', '音樂', '遊戲'],
-    },
+    data: [
+      { s: '我',   adv: '正在', v: '看',  what: '電影' },
+      { s: '弟弟', adv: '快樂地', v: '聽', what: '音樂' },
+      { s: '姊姊', adv: '安靜地', v: '玩', what: '遊戲' },
+      { s: '我',   adv: '快樂地', v: '看', what: '電視' },
+      { s: '同學', adv: '認真地', v: '聽', what: '老師說話' },
+      { s: '我',   adv: '安靜地', v: '讀', what: '課文' },
+    ],
+    vars: {},
   },
   {
     theory_type: 'usage', category_type: 'housing', question_type: 'sorting',

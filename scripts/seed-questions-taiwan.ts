@@ -51,10 +51,10 @@ const tw: TwQuestion[] = [
   },
   {
     theory_type: 'sociocultural', category_type: 'food_shopping', question_type: 'single_choice',
-    prompt: '臺灣早餐店最常見的飲料是？',
-    options: { '1': '冰奶茶', '2': '熱可可', '3': '蜂蜜檸檬', '4': '葡萄汁' },
+    prompt: '臺灣早餐店最具代表性的飲料是？',
+    options: { '1': '豆漿', '2': '熱可可', '3': '蜂蜜檸檬', '4': '葡萄汁' },
     answer: '1',
-    explanation: '臺灣早餐店常見的飲料是冰奶茶。',
+    explanation: '豆漿是臺灣早餐店最具代表性的飲料，幾乎每家都有供應。',
   },
   {
     theory_type: 'sociocultural', category_type: 'food_shopping', question_type: 'single_choice',
@@ -392,10 +392,10 @@ const tw: TwQuestion[] = [
   },
   {
     theory_type: 'sociocultural', category_type: 'digital', question_type: 'single_choice',
-    prompt: '臺灣人最常使用的搜尋引擎是？',
-    options: { '1': 'Google', '2': 'Bing', '3': 'Yahoo 奇摩', '4': '以上都常用' },
-    answer: '4',
-    explanation: 'Google、Bing、Yahoo 奇摩在臺灣都有使用者，Google 占多數。',
+    prompt: '臺灣使用人數最多的搜尋引擎是？',
+    options: { '1': 'Google', '2': 'Bing', '3': 'Yahoo 奇摩', '4': '百度' },
+    answer: '1',
+    explanation: 'Google 是臺灣使用人數最多的搜尋引擎，市佔率超過九成。',
   },
   {
     theory_type: 'sociocultural', category_type: 'digital', question_type: 'single_choice',
