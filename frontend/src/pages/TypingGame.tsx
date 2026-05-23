@@ -9,6 +9,7 @@
  */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfig } from '../context/ConfigContext';
 
 // ── Speed zones ───────────────────────────────────────────────────────────────
 // 1-10: BASE_SPEED  11-50: BASE_SPEED × 1.2  51-100: BASE_SPEED × 1.3
@@ -81,6 +82,8 @@ const MAX_LEVEL = 100;
 
 export default function TypingGame() {
   const navigate = useNavigate();
+  const { bpmfFont } = useConfig();
+  const useFont = bpmfFont !== 'none';
   const inputElRef = useRef<HTMLInputElement>(null);
 
   // Game loop mutable state (not React state to avoid re-render overhead)
@@ -432,7 +435,9 @@ export default function TypingGame() {
              }} />
       )}
 
-      {/* Falling characters */}
+      {/* Falling characters
+          字型模式：套用注音字型，字旁自動有注音，不再額外顯示 c.py
+          非字型模式：保留底下的注音標籤膠囊 */}
       {chars.map(c => (
         <div key={c.id}
              className="absolute z-10 flex flex-col items-center pointer-events-none"
@@ -442,13 +447,17 @@ export default function TypingGame() {
                opacity: c.exploding ? 0 : 1,
                transition: c.exploding ? 'opacity 0.3s' : 'none',
              }}>
-          <div className="text-4xl font-black leading-none"
-               style={{ textShadow: '0 0 14px rgba(253,210,0,0.8)', color: '#fef3c7' }}>
+          <div
+            className={`text-4xl font-black leading-none ${useFont ? 'bpmf-font' : ''}`}
+            style={{ textShadow: '0 0 14px rgba(253,210,0,0.8)', color: '#fef3c7' }}
+          >
             {c.char}
           </div>
-          <div className="text-xs text-indigo-200 mt-0.5 bg-indigo-900/80 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-            {c.py}
-          </div>
+          {!useFont && (
+            <div className="text-xs text-indigo-200 mt-0.5 bg-indigo-900/80 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+              {c.py}
+            </div>
+          )}
         </div>
       ))}
 
