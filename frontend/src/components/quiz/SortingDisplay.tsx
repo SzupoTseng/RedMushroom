@@ -58,7 +58,7 @@ export default function SortingDisplay({ question, onConfirm, disabled }: Props)
                         ${snap.isDragging ? 'border-mushroom-400 shadow-lg' : 'border-gray-200'}`}
                     >
                       <span className="text-gray-300 text-lg">⠿</span>
-                      <span className="text-lg font-semibold">{item.label}</span>
+                      <span className="text-lg font-semibold bpmf-font">{item.label}</span>
                     </div>
                   )}
                 </Draggable>

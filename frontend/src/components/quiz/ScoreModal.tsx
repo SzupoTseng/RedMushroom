@@ -175,7 +175,7 @@ export default function ScoreModal({
                       <span className="inline-block w-6 h-6 rounded-full bg-gray-100 text-center leading-6 text-xs font-bold mr-2">
                         {key}
                       </span>
-                      {label}
+                      <span className="bpmf-font">{label}</span>
                     </button>
                   );
                 })}

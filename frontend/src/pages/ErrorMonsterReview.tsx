@@ -140,7 +140,7 @@ export default function ErrorMonsterReview() {
               >
                 {k}
               </span>
-              {v}
+              <span className="bpmf-font">{v}</span>
             </button>
           ))}
         </div>

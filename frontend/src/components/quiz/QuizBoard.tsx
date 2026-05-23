@@ -127,7 +127,7 @@ export default function QuizBoard() {
                   >
                     {key}
                   </span>
-                  {label}
+                  <span className="bpmf-font">{label}</span>
                 </button>
               );
             })}
