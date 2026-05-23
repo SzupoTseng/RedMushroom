@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
-import StreakFire from '../components/common/StreakFire';
+import BpmfFontSelector from '../components/common/BpmfFontSelector';
 import { useTranslation } from '../i18n';
 import type { TheoryType } from '../types';
 
@@ -22,8 +22,8 @@ function expInLevel(exp: number, lv: number): number {
 }
 
 const ScoreCard = memo(function ScoreCard({
-  exp, rewardPoints, level, streak,
-}: { exp: number; rewardPoints: number; level: number; streak: number }) {
+  exp, rewardPoints, streak,
+}: { exp: number; rewardPoints: number; streak: number }) {
   const computedLv = expToLevel(exp);
   const inLevel = expInLevel(exp, computedLv);
   const needed = levelThreshold(computedLv);
@@ -118,6 +118,7 @@ export default function SubjectSelector() {
             : <p className="text-sm text-gray-500">{user?.display_name}</p>}
         </div>
         <div className="flex items-center gap-2">
+          <BpmfFontSelector />
           <LanguageSwitcher />
           <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/dashboard')}>
             📊 {t('nav.dashboard')}
@@ -138,7 +139,6 @@ export default function SubjectSelector() {
         <ScoreCard
           exp={user.total_exp}
           rewardPoints={user.reward_points ?? 0}
-          level={user.current_level}
           streak={user.streak_days}
         />
       )}

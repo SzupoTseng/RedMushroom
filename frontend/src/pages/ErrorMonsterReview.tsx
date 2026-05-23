@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useConfig, useSenLayout } from '../context/ConfigContext';
+import { useSenLayout } from '../context/ConfigContext';
+import ZhuyinText from '../components/common/ZhuyinText';
 import type { ZhuyinChar } from '../types';
 
 interface Monster {
@@ -27,7 +28,6 @@ function formatRelative(iso: string): string {
 
 export default function ErrorMonsterReview() {
   const { token } = useAuth();
-  const { showZhuyin } = useConfig();
   const sen = useSenLayout();
   const navigate = useNavigate();
   const [monsters, setMonsters] = useState<Monster[]>([]);
@@ -119,15 +119,10 @@ export default function ErrorMonsterReview() {
           )}
         </div>
 
-        <div className={`font-bold mb-6 flex flex-wrap ${sen ? 'text-3xl gap-2' : 'text-2xl gap-1'}`}>
-          {current.content.map((c, i) =>
-            showZhuyin && c.pinyin ? (
-              <ruby key={i}>{c.char}<rt className="text-xs text-gray-400">{c.pinyin}</rt></ruby>
-            ) : (
-              <span key={i}>{c.char}</span>
-            )
-          )}
-        </div>
+        <ZhuyinText
+          content={current.content}
+          className={`font-bold mb-6 block ${sen ? 'text-3xl' : 'text-2xl'}`}
+        />
 
         <div className={sen ? 'space-y-5' : 'space-y-3'}>
           {Object.entries(current.options).map(([k, v]) => (

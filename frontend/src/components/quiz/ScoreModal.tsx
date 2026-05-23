@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Question, ZhuyinChar } from '../../types';
-import { useConfig } from '../../context/ConfigContext';
 import SortingDisplay from './SortingDisplay';
+import ZhuyinText from '../common/ZhuyinText';
 
 export interface QuestionDetail {
   question_id: number;
@@ -30,7 +30,6 @@ export default function ScoreModal({
   totalScore, isPassed, expGained, praise,
   levelUp, newLevel, questions, results, answers, details = [], onRetry,
 }: Props) {
-  const { showZhuyin } = useConfig();
   const correct = Object.values(results).filter(Boolean).length;
   const [retryId, setRetryId] = useState<number | null>(null);
   const [retrySelected, setRetrySelected] = useState<string | null>(null);
@@ -136,15 +135,7 @@ export default function ScoreModal({
             </div>
 
             {/* 題目 */}
-            <div className="flex flex-wrap gap-0.5 mb-4 text-lg font-bold">
-              {retryDetail.content.map((c, i) =>
-                showZhuyin && c.pinyin ? (
-                  <ruby key={i}>{c.char}<rt className="text-xs text-gray-400">{c.pinyin}</rt></ruby>
-                ) : (
-                  <span key={i}>{c.char}</span>
-                )
-              )}
-            </div>
+            <ZhuyinText content={retryDetail.content} className="mb-4 text-lg font-bold block" />
 
             {/* 選項：排序題用拖曳、單選題用按鈕 */}
             {retryDetail.question_type === 'sorting' ? (

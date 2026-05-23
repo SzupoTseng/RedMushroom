@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── 注音字型（自帶注音標註） ──────────────────────────
+ * 套用後漢字旁邊會自動顯示注音，不需要 <ruby>/<rt> 標籤
+ * 來源：https://github.com/ButTaiwan/bpmfvs (Apache 2.0)
+ */
+@font-face {
+  font-family: 'BpmfHuninn';
+  src: url('/fonts/BpmfHuninn-Regular.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+@font-face {
+  font-family: 'BpmfIansui';
+  src: url('/fonts/BpmfIansui-Regular.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+@font-face {
+  font-family: 'BpmfZihiKai';
+  src: url('/fonts/BpmfZihiKaiStd-Regular.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+@font-face {
+  font-family: 'BpmfGenYoGothic';
+  src: url('/fonts/BpmfGenYoGothic-R.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+
+/* 套用此 class 時：使用所選的注音字型，漢字旁邊會自動有注音 */
+.bpmf-font {
+  font-family: var(--bpmf-font-family), 'Noto Sans TC', sans-serif;
+  line-height: 1.8;
+}
+
 @layer base {
   html {
     font-family: 'Noto Sans TC', sans-serif;

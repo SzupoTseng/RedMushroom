@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../../context/QuizContext';
 import SortingDisplay from './SortingDisplay';
 import SpeechRecorder from './SpeechRecorder';
-import { useConfig, useSenLayout } from '../../context/ConfigContext';
+import { useSenLayout } from '../../context/ConfigContext';
 import type { ZhuyinChar } from '../../types';
+import ZhuyinText from '../common/ZhuyinText';
 
 export default function QuizBoard() {
   const { state, submitAnswer, nextQuestion, finishQuiz, resetQuiz } = useQuiz();
   const navigate = useNavigate();
-  const { showZhuyin } = useConfig();
   const sen = useSenLayout();
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -80,19 +80,11 @@ export default function QuizBoard() {
           {question.question_type === 'sorting' ? '請排出正確語序：' : '請選出正確答案：'}
         </p>
 
-        {/* 注音顯示 */}
-        <div className={`font-bold mb-6 flex flex-wrap ${sen ? 'text-3xl gap-2' : 'text-2xl gap-1'}`}>
-          {question.content.map((c: ZhuyinChar, i: number) =>
-            showZhuyin && c.pinyin ? (
-              <ruby key={i}>
-                {c.char}
-                <rt className="text-xs text-gray-400">{c.pinyin}</rt>
-              </ruby>
-            ) : (
-              <span key={i}>{c.char}</span>
-            )
-          )}
-        </div>
+        {/* 注音顯示（ruby 標籤或注音字型，依設定切換） */}
+        <ZhuyinText
+          content={question.content}
+          className={`font-bold mb-6 block ${sen ? 'text-3xl' : 'text-2xl'}`}
+        />
 
         {question.question_type === 'single_choice' && (
           <SpeechRecorder
