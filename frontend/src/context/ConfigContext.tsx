@@ -33,7 +33,8 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguage] = useState('zh-TW');
   const [bpmfFont, setBpmfFontState] = useState<BpmfFont>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_FONT) : null;
-    return (saved as BpmfFont) || 'none';
+    // 預設使用教育楷書（最像課本字型）
+    return (saved as BpmfFont) || 'BpmfZihiKai';
   });
 
   const toggleZhuyin = () => setShowZhuyin((v) => !v);
