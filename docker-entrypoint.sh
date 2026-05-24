@@ -1,38 +1,28 @@
 #!/bin/sh
 # RedMushroom container entrypoint.
 #
-# On first boot (volume is empty), initialise the SQLite DB and seed it.
-# On every subsequent boot, just start the server — the persistent volume
-# preserves users, sessions, EXP, etc.
+# First boot (persistent volume is empty) → initialise schema + seed.
+# Every subsequent boot → just start the server (data preserved on volume).
+#
+# Uses tsx + better-sqlite3 from /app/scripts/node_modules. No sqlite3 CLI
+# is required at runtime, which keeps the image dependency-light.
 
 set -e
 
 DB_PATH="${DB_PATH:-/app/database/redmushroom.db}"
 DB_DIR="$(dirname "$DB_PATH")"
 SETUP_MARKER="$DB_DIR/.seeded"
+TSX=/app/scripts/node_modules/.bin/tsx
 
 mkdir -p "$DB_DIR"
 
 if [ ! -f "$SETUP_MARKER" ] || [ ! -f "$DB_PATH" ]; then
-  echo "[entrypoint] DB not initialised — seeding now (first-boot only)..."
+  echo "[entrypoint] first boot — initialising schema + seeds..."
 
-  cd /app
-
-  # 1. Create schema
-  echo "[entrypoint] applying schema from database/init.sql"
-  sqlite3 "$DB_PATH" < database/init.sql
-
-  # 2. Apply migrations (idempotent)
-  if [ -f database/upgrade_schema.sql ]; then
-    echo "[entrypoint] applying upgrade_schema.sql"
-    sqlite3 "$DB_PATH" < database/upgrade_schema.sql || true
-  fi
-
-  # 3. Seed questions, praises, demo accounts.
-  # The scripts/ directory has its own node_modules with tsx + better-sqlite3
-  # already compiled for Linux during image build.
   cd /app/scripts
-  TSX=./node_modules/.bin/tsx
+
+  echo "[entrypoint] running init-prod.ts (schema + migrations)"
+  DB_PATH="$DB_PATH" $TSX init-prod.ts
 
   for seed in \
     seed-minimal.ts \
@@ -44,7 +34,7 @@ if [ ! -f "$SETUP_MARKER" ] || [ ! -f "$DB_PATH" ]; then
   do
     if [ -f "$seed" ]; then
       echo "[entrypoint] running $seed"
-      $TSX "$seed" || echo "[entrypoint] WARN: $seed failed, continuing"
+      DB_PATH="$DB_PATH" $TSX "$seed" || echo "[entrypoint] WARN: $seed failed, continuing"
     fi
   done
 
