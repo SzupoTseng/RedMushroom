@@ -561,16 +561,18 @@ export const TEMPLATES: Template[] = [
   // USAGE × 8 sorting — 詞語排序
   // ──────────────────────────────────────────────────────
   {
+    // 「想要」表願望，數量詞後接名詞——強制 S + want + 數量 + 物品 順序，
+    // 「我兩個想要包子」「兩個我想要包子」皆不通，避免歧義。
     theory_type: 'usage', category_type: 'food_shopping', question_type: 'sorting',
     prompts: SORTING_PROMPTS,
-    options: (v) => ({ '1': v.s, '2': v.tense, '3': v.v, '4': v.what }),
+    options: (v) => ({ '1': v.s, '2': v.want, '3': v.count, '4': v.thing }),
     answer: '1,2,3,4',
-    explanation: (v) => `正確語序：${v.s}${v.tense}${v.v}${v.what}。`,
+    explanation: (v) => `正確語序：${v.s}${v.want}${v.count}${v.thing}。`,
     vars: {
       s:     ['我', '小華', '美玲', '志強'],
-      tense: ['昨天', '剛才', '今天早上'],
-      v:     ['吃了', '買了'],
-      what:  ['一個飯糰', '兩個包子', '三塊餅乾'],
+      want:  ['想要', '想吃', '想買'],
+      count: ['一個', '兩個', '三塊'],
+      thing: ['包子', '飯糰', '餅乾'],
     },
   },
   {
@@ -613,16 +615,18 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    // 「應該／多／V」是建議句，必為 S + modal + adv + V 順序，
+    // 「應該我多運動」不通；避免「每天 vs 我每天」歧義。
     theory_type: 'usage', category_type: 'health', question_type: 'sorting',
     prompts: SORTING_PROMPTS,
-    options: (v) => ({ '1': v.time, '2': v.s, '3': v.v, '4': v.what }),
+    options: (v) => ({ '1': v.s, '2': v.modal, '3': v.adv, '4': v.v }),
     answer: '1,2,3,4',
-    explanation: (v) => `正確語序：${v.time}${v.s}${v.v}${v.what}。`,
+    explanation: (v) => `正確語序：${v.s}${v.modal}${v.adv}${v.v}。`,
     vars: {
-      time: ['每天', '每週', '每個月'],
-      s:    ['我', '小華', '阿志', '美玲'],
-      v:    ['運動', '練習', '走路'],
-      what: ['三十分鐘', '一個小時', '半個小時'],
+      s:     ['弟弟', '小華', '阿志', '美玲'],
+      modal: ['應該', '可以', '需要'],
+      adv:   ['多', '常常', '每天'],
+      v:     ['運動', '喝水', '吃蔬菜'],
     },
   },
   {
@@ -643,16 +647,18 @@ export const TEMPLATES: Template[] = [
     vars: {},
   },
   {
+    // 「S 的 房間 形容詞」是領屬+主語+形容詞結構，必為固定順序。
+    // 移除舊版「S + V + 在 + Room」因為「媽媽睡在客廳」=「媽媽在客廳睡」皆對。
     theory_type: 'usage', category_type: 'housing', question_type: 'sorting',
     prompts: SORTING_PROMPTS,
-    options: (v) => ({ '1': v.s, '2': v.v, '3': v.in, '4': v.room }),
+    options: (v) => ({ '1': v.owner, '2': v.de, '3': v.room, '4': v.adj }),
     answer: '1,2,3,4',
-    explanation: (v) => `正確語序：${v.s}${v.v}${v.in}${v.room}。`,
+    explanation: (v) => `正確語序：${v.owner}${v.de}${v.room}${v.adj}。`,
     vars: {
-      s:    ['媽媽', '爸爸', '哥哥', '小狗'],
-      v:    ['睡'],
-      in:   ['在'],
-      room: ['臥室', '客廳', '書房', '陽台'],
+      owner: ['我家', '姊姊家', '外婆家', '舅舅家'],
+      de:    ['的'],
+      room:  ['客廳', '書房', '廚房', '陽台'],
+      adj:   ['很大', '很乾淨', '很整齊'],
     },
   },
   {

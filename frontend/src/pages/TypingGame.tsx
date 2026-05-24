@@ -176,6 +176,24 @@ export default function TypingGame() {
       L.chars = []; // clear remaining chars
       L.lastSpawn = 0;
       const newCfg = levelConfig(L.level);
+      // Pre-spawn 2 visible chars so new level starts with action
+      const pool = wordsRef.current;
+      if (pool && pool.length > 0) {
+        const burstCount = Math.min(2, newCfg.maxOnScreen);
+        const baseRotSp = newCfg.rotSp;
+        const willRotate = baseRotSp > 0;
+        for (let i = 0; i < burstCount; i++) {
+          const w = pool[Math.floor(Math.random() * pool.length)];
+          L.chars.push({
+            id: ++L.idSeq, char: w.char, py: w.py,
+            x: 15 + i * 30 + Math.random() * 20, y: 5 + i * 20,
+            speed: newCfg.speed * (0.85 + Math.random() * 0.3),
+            rotation: willRotate ? Math.random() * 360 : 0,
+            rotSp: willRotate ? baseRotSp * (Math.random() < 0.5 ? 1 : -1) : 0,
+            exploding: false, explodeAt: 0,
+          });
+        }
+      }
       setUiLevel(L.level);
       setUiCleared(0);
       setUiTarget(newCfg.target);
@@ -302,6 +320,27 @@ export default function TypingGame() {
     setUiCleared(0); setUiTarget(cfg.target);
     setDisplay(''); setComboFlash(''); setLevelUpFlash('');
     setShotTarget(null); setWrongFlash(false);
+
+    // Pre-spawn 2 chars at visible y so player sees targets immediately.
+    // Without this, Lv 1's 3.4s spawn interval leaves the screen empty at start.
+    const pool = wordsRef.current;
+    if (pool && pool.length > 0) {
+      const burstCount = Math.min(2, cfg.maxOnScreen);
+      const baseRotSp = cfg.rotSp;
+      const willRotate = baseRotSp > 0;
+      for (let i = 0; i < burstCount; i++) {
+        const w = pool[Math.floor(Math.random() * pool.length)];
+        L.chars.push({
+          id: ++L.idSeq, char: w.char, py: w.py,
+          x: 15 + i * 30 + Math.random() * 20, y: 5 + i * 20,
+          speed: cfg.speed * (0.85 + Math.random() * 0.3),
+          rotation: willRotate ? Math.random() * 360 : 0,
+          rotSp: willRotate ? baseRotSp * (Math.random() < 0.5 ? 1 : -1) : 0,
+          exploding: false, explodeAt: 0,
+        });
+      }
+    }
+
     setPhase('play');
     setTimeout(() => inputElRef.current?.focus(), 50);
   };

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { QuizProvider } from './context/QuizContext';
 import { ConfigProvider } from './context/ConfigContext';
 import BiBoFloatingSprite from './components/common/BiBoFloatingSprite';
+import ReadingHelper from './components/common/ReadingHelper';
 
 // Pages are code-split per route. Each becomes its own chunk under dist/assets/,
 // so the initial bundle stays lean (login page only) and authenticated routes
@@ -18,6 +19,12 @@ const ErrorMonsterReview = lazy(() => import('./pages/ErrorMonsterReview'));
 const Leaderboard        = lazy(() => import('./pages/Leaderboard'));
 const Pvp                = lazy(() => import('./pages/Pvp'));
 const TypingGame         = lazy(() => import('./pages/TypingGame'));
+const WordTypingGame     = lazy(() => import('./pages/WordTypingGame'));
+const ReadingTool        = lazy(() => import('./pages/ReadingTool'));
+const MathPracticeGen    = lazy(() => import('./pages/MathPracticeGenerator'));
+const WritingGrid        = lazy(() => import('./pages/WritingGrid'));
+const PrintWorksheet     = lazy(() => import('./pages/PrintWorksheet'));
+const StrokePractice     = lazy(() => import('./pages/StrokePractice'));
 
 function Loading() {
   return (
@@ -46,6 +53,7 @@ function AppRoutes() {
   return (
     <QuizProvider>
       <BiBoFloatingSprite />
+      <ReadingHelper />
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<SubjectSelector />} />
@@ -56,6 +64,12 @@ function AppRoutes() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/pvp" element={<Pvp />} />
         <Route path="/typing-game" element={<TypingGame />} />
+        <Route path="/word-typing" element={<WordTypingGame />} />
+        <Route path="/reading-tool" element={<ReadingTool />} />
+        <Route path="/ext/math" element={<MathPracticeGen />} />
+        <Route path="/ext/writing-grid" element={<WritingGrid />} />
+        <Route path="/ext/worksheet" element={<PrintWorksheet />} />
+        <Route path="/ext/stroke" element={<StrokePractice />} />
           {(user.role === 'teacher') && (
             <Route path="/admin" element={<Admin />} />
           )}

@@ -29,3 +29,18 @@ ALTER TABLE users ADD COLUMN reward_points INTEGER NOT NULL DEFAULT 0;
 
 INSERT OR IGNORE INTO db_migrations (version, description)
 VALUES (3, 'reward_points: separate spendable currency for reward shop');
+
+-- v4: dictionary 表 — 注音 + 釋義（來自 ToneOZ 澳聲通字典）
+-- 同一個 word 可以有多個讀音（破音字），用 reading_idx 區分（0 = 主讀音）
+CREATE TABLE IF NOT EXISTS dictionary (
+  dict_id     INTEGER PRIMARY KEY,
+  word        TEXT NOT NULL,
+  reading_idx INTEGER NOT NULL DEFAULT 0,
+  zhuyin      TEXT NOT NULL,
+  definition  TEXT NOT NULL,
+  UNIQUE(word, reading_idx)
+);
+CREATE INDEX IF NOT EXISTS idx_dict_word ON dictionary(word);
+
+INSERT OR IGNORE INTO db_migrations (version, description)
+VALUES (4, 'dictionary table from ToneOZ tzdic data (~13k entries)');

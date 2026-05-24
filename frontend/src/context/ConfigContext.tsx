@@ -2,14 +2,27 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthContext';
 
 // 注音字型選項：'none' = 不用字型（用 <ruby>/<rt> 標註）；其他為字型 family 名稱
-export type BpmfFont = 'none' | 'BpmfHuninn' | 'BpmfIansui' | 'BpmfZihiKai' | 'BpmfGenYoGothic';
+export type BpmfFont =
+  | 'none'
+  | 'BpmfHuninn'
+  | 'BpmfIansui'
+  | 'BpmfZihiKai'
+  | 'BpmfGenYoGothic'
+  | 'BpmfGenSenRounded'
+  | 'BpmfZihiSerif'
+  | 'HanWangKaiAnnotated'
+  | 'HanWangMingPolyphonic1';
 
 export const BPMF_FONT_LABELS: Record<BpmfFont, string> = {
-  none:             '不用字型（標註注音）',
-  BpmfHuninn:       '粉圓注音 Huninn（現代）',
-  BpmfIansui:       '芫荽注音 Iansui（手寫）',
-  BpmfZihiKai:      '字嗨楷體（教育楷書）',
-  BpmfGenYoGothic:  '源樣黑體（黑體）',
+  none:                    '不用字型（標註注音）',
+  BpmfZihiKai:             '字嗨楷體（教育楷書）',
+  HanWangKaiAnnotated:     '王漢宗中楷體（傳統楷書）',
+  BpmfHuninn:              '粉圓注音 Huninn（現代圓）',
+  BpmfGenSenRounded:       '源泉圓體（柔和圓體）',
+  BpmfGenYoGothic:         '源樣黑體（黑體）',
+  BpmfZihiSerif:           '字嗨明體（明體書本）',
+  BpmfIansui:              '芫荽注音 Iansui（手寫）',
+  HanWangMingPolyphonic1:  '王漢宗中明體破音字一（多音字教學）',
 };
 
 interface ConfigContextValue {

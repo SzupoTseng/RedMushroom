@@ -4,7 +4,11 @@
 
 /* ── 注音字型（自帶注音標註） ──────────────────────────
  * 套用後漢字旁邊會自動顯示注音，不需要 <ruby>/<rt> 標籤
- * 來源：https://github.com/ButTaiwan/bpmfvs (Apache 2.0)
+ * Bpmf* 來源：https://github.com/ButTaiwan/bpmfvs (Apache 2.0)
+ * HanWang* 來源：王漢宗教授中文字型（自由授權）
+ *
+ * 注意：font-display: swap + unicode-range 讓瀏覽器只在「真的有用到 .bpmf-font」時
+ * 才下載字型，初始 bundle 不會被影響。
  */
 @font-face {
   font-family: 'BpmfHuninn';
@@ -30,11 +34,261 @@
   font-display: swap;
   unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
 }
+@font-face {
+  font-family: 'BpmfGenSenRounded';
+  src: url('/fonts/BpmfGenSenRounded-R.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+@font-face {
+  font-family: 'BpmfZihiSerif';
+  src: url('/fonts/BpmfZihiSerif-Regular.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+@font-face {
+  font-family: 'HanWangKaiAnnotated';
+  src: url('/fonts/HanWangKaiAnnotated.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
+@font-face {
+  font-family: 'HanWangMingPolyphonic1';
+  src: url('/fonts/HanWangMingPolyphonic1.ttf') format('truetype');
+  font-display: swap;
+  unicode-range: U+4E00-9FFF, U+3000-303F, U+FF00-FFEF, U+FE00-FE0F, U+E0100-E01EF;
+}
 
 /* 套用此 class 時：使用所選的注音字型，漢字旁邊會自動有注音 */
 .bpmf-font {
   font-family: var(--bpmf-font-family), 'Noto Sans TC', sans-serif;
   line-height: 1.8;
+}
+
+/* ── ReadingTool：字 + 注音直排右側 ──
+ * 仿 Bpmf_VSIME 原工具的版面：每個漢字旁邊（右側）直排注音符號。
+ * 不用 <ruby> 因為 <rt> 預設排在上方，會破壞文章閱讀流。
+ */
+.char-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  vertical-align: middle;
+  padding: 1px 2px;
+  border-radius: 3px;
+  user-select: none;
+}
+.char-block > .char {
+  font-size: 1em;
+  line-height: 1;
+}
+/* .bpmf-right 是 BopomofoColumn 元件根節點，橫向兩欄：
+ *   - .bpmf-syllables: 聲符+介符+韻符（直排）
+ *   - .bpmf-tone: 聲調符號（右側）
+ *
+ * 兩種使用場景：
+ *   1. 在 .char-block 內（字塊右側小注音）：縮成 0.28em
+ *   2. 獨立使用（字典 pill、結算頁）：用父層字級
+ */
+.bpmf-right {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: stretch;
+  line-height: 0.95;
+  font-family: 'Noto Sans TC', 'PMingLiU', sans-serif;
+  color: #333;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+.char-block > .bpmf-right {
+  font-size: 0.28em;
+}
+.bpmf-syllables {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.bpmf-syllables > span {
+  display: block;
+  white-space: nowrap;
+}
+.bpmf-tone {
+  display: inline-block;
+  align-self: center;       /* 預設聲調垂直置中 */
+  margin-left: 0.05em;
+  font-weight: bold;
+}
+.bpmf-tone.neutral {
+  align-self: flex-start;   /* 輕聲 ˙ 放右上角 */
+  margin-top: -0.2em;
+}
+
+/* ── 田字格 / 米字格（WritingGrid）──
+ * 純 CSS 繪製，無需外部資源。每格 56×56 px (列印時放大)。
+ */
+.grid-cell {
+  width: 56px;
+  height: 56px;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  position: relative;
+  flex-shrink: 0;
+}
+.grid-cell:first-child {
+  border-left: 1px solid #ddd;
+}
+.grid-cell.tianzi::before,
+.grid-cell.tianzi::after,
+.grid-cell.mizi::before,
+.grid-cell.mizi::after {
+  content: '';
+  position: absolute;
+  background-image: linear-gradient(to right, #e5d4a8 50%, transparent 50%);
+  background-size: 4px 1px;
+  background-repeat: repeat-x;
+}
+.grid-cell.tianzi::before,
+.grid-cell.mizi::before {
+  /* 水平中線 */
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.grid-cell.tianzi::after,
+.grid-cell.mizi::after {
+  /* 垂直中線 (轉成直線) */
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  height: auto;
+  background-image: linear-gradient(to bottom, #e5d4a8 50%, transparent 50%);
+  background-size: 1px 4px;
+  background-repeat: repeat-y;
+}
+/* 米字格額外兩條對角虛線（用 box-shadow 模擬） */
+.grid-cell.mizi {
+  background-image:
+    linear-gradient(45deg, transparent calc(50% - 0.5px), #e5d4a8 calc(50% - 0.5px), #e5d4a8 calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), #e5d4a8 calc(50% - 0.5px), #e5d4a8 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: repeat, repeat;
+}
+.grid-char {
+  font-size: 36px;
+  line-height: 1;
+  color: #111;
+}
+.grid-char.grid-guide {
+  color: #ccc;            /* 淡色描紅 */
+}
+.writing-grid-page {
+  display: inline-block;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+}
+
+/* ── 題目切換動畫（QuizBoard）──
+ * 題卡 key 變動時觸發 slide-in，splash 同時 scale+pulse 引導視線。
+ */
+@keyframes quiz-card-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.quiz-card-anim {
+  animation: quiz-card-slide-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes quiz-splash-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(20px);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0);
+  }
+  50% {
+    transform: scale(1.0);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+}
+.quiz-splash {
+  animation: quiz-splash-pop 700ms ease-in-out forwards;
+}
+
+/* ── 恐龍跑步動畫（WordTypingGame）──
+ * 🦖 emoji 預設就面向左邊（往玩家方向跑），不需要 scaleX(-1) 翻轉。
+ * 只做上下彈跳 + 輕微前傾後仰，模擬奔跑姿態。
+ */
+@keyframes dino-run {
+  0%   { transform: translateY(0)    rotate(-3deg); }
+  25%  { transform: translateY(-6px) rotate(0deg); }
+  50%  { transform: translateY(0)    rotate(3deg); }
+  75%  { transform: translateY(-3px) rotate(0deg); }
+  100% { transform: translateY(0)    rotate(-3deg); }
+}
+.dino-run {
+  animation: dino-run 420ms ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* 輸入錯誤時的紅色搖晃反饋 */
+@keyframes input-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.input-shake {
+  animation: input-shake 280ms ease-in-out;
+}
+
+/* 恐龍逼近時的危險區紅色脈動（很微弱，不刺眼） */
+@keyframes danger-pulse {
+  0%, 100% { background-color: rgba(254, 226, 226, 0.4); }
+  50%      { background-color: rgba(254, 202, 202, 0.7); }
+}
+.danger-pulse {
+  animation: danger-pulse 1.2s ease-in-out infinite;
+}
+
+/* 連擊閃現：放大 → 縮小 → 淡出 */
+@keyframes combo-flash {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.0); }
+}
+.combo-flash {
+  animation: combo-flash 800ms ease-out forwards;
+}
+
+/* ── 列印樣式 ── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; }
+  .card { box-shadow: none !important; border: none !important; padding: 0 !important; }
+  .grid-cell { width: 64px; height: 64px; }
+  .grid-char { font-size: 42px; }
+  /* 確保田字格背景線在列印時保留 */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
 
 @layer base {

@@ -22,35 +22,74 @@
 7. [Database Schema](#database-schema)
 8. [API Reference](#api-reference)
 9. [Question Generation System](#question-generation-system)
-10. [SEN Mode Design](#sen-mode-design)
-11. [Multi-Subject Modules](#multi-subject-modules)
-12. [Testing](#testing)
-13. [Security](#security)
-14. [Development Workflow](#development-workflow)
-15. [Troubleshooting](#troubleshooting)
-16. [License](#license)
+10. [Score & Reward System](#score--reward-system)
+11. [Typing Game](#typing-game)
+12. [Bopomofo Font System](#bopomofo-font-system)
+13. [Reading Helper (Dictionary Side Panel)](#reading-helper-dictionary-side-panel)
+14. [SEN Mode Design](#sen-mode-design)
+15. [Multi-Subject Modules](#multi-subject-modules)
+16. [Testing](#testing)
+17. [Security](#security)
+18. [Development Workflow](#development-workflow)
+19. [Troubleshooting](#troubleshooting)
+20. [License](#license)
 
 ---
 
 ### Features
 
-- 🧠 **4 Learning Theories**: Cognitive, Input, Usage, Sociocultural — every quiz exercises a single theory.
-- 📚 **~1,500 Chinese + 32 Math Questions**: 32-template matrix (4 theory × 8 category × prompt variants) + 57 Taiwan-localised seeds + 32 hand-crafted math problems in Taiwan contexts (NTD, 坪, YouBike, 健保 etc.).
-- 🎲 **Stratified Sampling + 6h No-Repeat**: Each 10-question quiz draws from all 8 life-context categories, AND skips any question the same user has already answered in the last 6 hours.
-- 🎮 **RPG Progress System**: EXP, levels, win streaks, Grammar Sprite pet that evolves with theory-specific XP.
-- 🔥 **Daily Streak Rewards**: Treasure chest auto-unlocks at 7 / 14 / 30 days (title / pet skin).
-- 🐲 **Error Monsters**: SM-2-lite spaced repetition (**1h** / 24h / 72h / 168h / 336h intervals; 3 consecutive corrects "purifies"). Newly-trapped monsters appear in the review list within an hour and are marked **🟢 現在可複習** vs **⏳ 等待 N 分鐘** so kids see instant feedback after a wrong answer.
-- ⚔️ **Async PvP Arena**: Challenge the median of your own past 5 sessions — race yesterday's you, not your classmates.
-- 🏆 **Class Hero Leaderboard**: Classmates' names privacy-masked to first-character + 同學 (e.g. 「林同學」).
-- 🎤 **Speech Bonus XP**: Web Speech API (zh-TW); +5 XP for ≥70% Dice-bigram similarity on read-aloud.
+#### Quiz modes
+- 🧠 **4 Learning Theories**: Cognitive, Input, Usage, Sociocultural — single-theory focus.
+- 🎯 **綜合練習 (Mixed Mode)**: One 10-question quiz pulls 2–3 from EACH theory, stratified across all 8 categories. Most diverse practice.
+- ✂️ **排句子 (Sorting-only Mode)**: 10 drag-to-arrange questions drawn from all categories (`question_type = 'sorting'`). Tiles spawn in randomised order so the kid actually has to drag.
+- 📚 **~1,000+ Chinese + 32 Math Questions**: 32-template matrix (4 theory × 8 category × prompt variants) + 57 Taiwan-localised seeds + 32 math problems in Taiwan contexts (NTD, 坪, YouBike, 健保).
+
+#### Anti-repetition / quality
+- 🎲 **Stratified Sampling + 6h No-Repeat**: Round-robins all 8 life-context categories; skips any question the same user saw OR answered in the last 6 hours.
+- 🛡️ **Content-fingerprint Deduplication**: Even if two `question_id`s have identical options+correct_answer (e.g. only the actor name differs), only one is shown per quiz — refills from a structurally different question in the same category.
+- 🔀 **Shuffled Answer Positions**: Each question's correct answer is shuffled into one of 4 slots at seed time. Distribution roughly 25% / 25% / 25% / 25%.
+- 🔄 **Drag-tile Shuffle**: Sorting questions display tiles in random order (not the answer order).
+- 🎨 **Multiple Prompt Phrasings**: Each cognitive template rotates through 4 question wordings, plus sorting through 3.
+
+#### Typing game (注音打字遊戲)
+- 🎮 **Falling-character typing game**: 100 levels of escalating difficulty.
+- 🔵 **Levels 1–10**: upright text, slow.
+- ⬇️ **Levels 11–50**: upright text, slow × 1.2.
+- 🌀 **Levels 51–100**: rotating text, slow × 1.3.
+- 🎯 **Per-level target**: 5/6/…/10 (levels 1–6 ramp), then = level number (level 50 = 50 characters).
+- 💚 **IME-compatible**: uses `compositionupdate` + `compositionend` so users can type bopomofo with the Chinese IME on. No need to disable input method.
+- ✏️ **Real-time bopomofo display**: shows the bopomofo being typed in the input area as the IME composes.
+- 🍄 **3 mushroom lives**; a character reaching the ground deducts one.
+- 🎯 **Combo system**: +5 EXP per consecutive hit above 1.
+
+#### Scoring & rewards (two-currency system)
+- 📊 **經驗值 EXP** (`total_exp`): grows from quizzes and the typing game; never decreases. Drives the level system.
+- 🎁 **兌換獎品分數 reward_points**: a separate spendable currency, earned at the same rate as EXP. Reserved for the planned reward shop where redemption deducts from this balance only (EXP unaffected).
+- 🆙 **Level thresholds double per level**: Lv1→2 = 5,000 EXP, Lv2→3 = 10,000, Lv3→4 = 20,000, … (`5000 × 2^(lv-1)`).
+- 💯 **1:1 score → EXP**: get 80 in a quiz → +80 EXP; +10 bonus if you pass; typing game gives 1 EXP per character.
+- 🏠 **Home page score card**: Lv, progress bar, total EXP, reward points, streak fire — all auto-refresh after each game.
+- ❌ **Mid-quiz exit = no score** (the unified `← 離開` button discards the in-progress session).
+
+#### Other gameplay
+- 🐲 **Error Monsters**: SM-2-lite spaced repetition (**1h** / 24h / 72h / 168h / 336h; 3 consecutive corrects "purifies"). Newly-trapped monsters surface within an hour; UI marks them **🟢 現在可複習** vs **⏳ 等待 N 分鐘**.
+- ⚔️ **Async PvP Arena**: Challenge the median of your own past 5 sessions.
+- 🏆 **Class Hero Leaderboard**: Names privacy-masked to first-character + 同學.
+- 🎤 **Speech Bonus XP**: Web Speech API (zh-TW); +5 XP for ≥70% Dice-bigram similarity.
 - 📊 **6-Dimension Radar**: Accuracy, Stability, Breadth, Cognitive, Endurance, Fluency.
-- 🌟 **SEN-Friendly Mode**: "輕鬆學習模式" — 5 questions, larger fonts, single-column layout, 1.8s anti-mistap cooldown, dedicated 50+ praise lines, mascot hides for distraction-free learning. **Never uses clinical terminology in the UI.**
-- 💬 **555-line Praise Library**: 503 general + 52 SEN-specialty across 7 scenarios × 3 tones. Last 20 used are excluded from the next pick so kids rarely see the same encouragement twice.
-- 📱 **QR Code Parent Portal**: 5-minute one-time token (UUID v4) — no cloud account or app install needed.
+- 🔁 **Inline Wrong-answer Retry**: After a quiz, each wrong question gets a 試試 button that opens a side panel — answer again with no score impact. Works for both single-choice and sorting questions.
+
+#### Accessibility & UI
+- 🌟 **SEN-Friendly Mode**: "輕鬆學習模式" — 5 questions, larger fonts, single-column, 1.8s anti-mistap cooldown, dedicated 50+ praise lines, mascot hides. Never uses clinical terms.
+- ✍️ **Bopomofo Font System**: 4 bundled bopomofo fonts (粉圓 Huninn / 芫荽 Iansui / 字嗨楷體 / 源樣黑體) plus the traditional `<ruby>/<rt>` mode. User-selectable, persisted in `localStorage`. Default: **字嗨楷體 (educational kai)**, the closest to actual textbook style.
+- ← **Unified back button**: Every page/game has a consistent `← 返回` (or `← 離開` mid-game) for confident navigation.
+
+#### Content & community
+- 💬 **555-line Praise Library**: 503 general + 52 SEN-specialty; last 20 excluded from the next pick.
+- 📱 **QR Code Parent Portal**: 5-minute one-time token (UUID v4) — no cloud account.
 - 👩‍🏫 **Teacher Dashboard**: Class overview, PDF reports, CSV export.
-- 🌐 **Multi-language UI**: zh-TW / English / Japanese / Korean (curriculum stays Mandarin; the chrome is global).
-- 🐹 **AI Child Tester**: Built-in 4-persona Playwright simulator (careful / random / speedy / guesser) for UX stress testing.
-- 📦 **Code-split frontend**: Initial JS bundle 170KB (gzip 55KB); each page loads on demand.
+- 🌐 **Multi-language UI**: zh-TW / English / Japanese / Korean.
+- 🐹 **AI Child Tester**: Built-in 4-persona Playwright simulator for UX stress testing.
+- 📦 **Code-split frontend**: Initial JS bundle 170KB (gzip 55KB).
 
 ---
 
@@ -91,11 +130,17 @@ npm start         # Start frontend + backend (Ctrl+C twice to stop)
 #### One-off seed commands
 
 ```bash
-npm run seed:questions   # ~1500 Chinese questions from 32 templates
+npm run seed:questions   # ~1000 Chinese questions from 32 templates
 npm run seed:tw          # 57 Taiwan-localised Chinese questions
 npm run seed:math        # 32 math questions (4 theory × 8 category)
 npm run seed:praise      # 555 praise lines (general + SEN)
 ```
+
+#### When something breaks
+
+- **`Run.bat` shows "concurrently is not recognized"** → you ran `npm install` from WSL on the shared NTFS partition. Linux symlinks instead of Windows `.cmd` shims. **Fix:** double-click `reinstall.bat` (wipes & reinstalls all 4 `node_modules` layers — root / backend / frontend / scripts — using Windows-native npm).
+- **DB needs regeneration after a code change** → `Run.bat` checks for `database/.db-version` (a small marker file written by `setup.mjs`). Delete `database/redmushroom.db` and `database/.db-version`, then double-click `Run.bat` — it auto-runs setup.
+- **`better-sqlite3` native compile fails** → Node version (e.g. 25) is too new for the bundled prebuilds. Downgrade to Node 22 LTS, OR install Visual Studio Build Tools so it can compile from source.
 
 ---
 
@@ -127,14 +172,16 @@ The backend reads `is_sen_mode` from the DB on every `/api/quiz/start`, so the n
 ```
 RedMushroom/
 ├── frontend/                       # React 18 + Vite + Tailwind
+│   ├── public/
+│   │   └── fonts/                  # 8 bopomofo TrueType fonts (66 MB total, lazy-loaded)
 │   ├── src/
 │   │   ├── App.tsx                 # Lazy-loaded routes + Suspense
-│   │   ├── pages/                  # 9 page-level components
-│   │   ├── components/             # quiz/, common/
-│   │   ├── context/                # AuthContext, QuizContext, ConfigContext
+│   │   ├── pages/                  # 11 page-level components incl. TypingGame
+│   │   ├── components/             # quiz/, common/ (ZhuyinText, BpmfFontSelector …)
+│   │   ├── context/                # AuthContext, QuizContext, ConfigContext (bpmfFont)
 │   │   ├── hooks/                  # useSpeechRecognition
 │   │   ├── i18n/                   # 4 locales
-│   │   └── types/                  # Shared TS types
+│   │   └── types/                  # Shared TS types (User has reward_points)
 │   ├── tailwind.config.ts
 │   └── vite.config.ts
 │
@@ -153,21 +200,27 @@ RedMushroom/
 │   └── .env.example
 │
 ├── database/
-│   ├── init.sql                    # 11-table schema + indexes
-│   ├── upgrade_schema.sql          # Future migrations
+│   ├── init.sql                    # 11-table schema + indexes (UNIQUE on quiz_details)
+│   ├── upgrade_schema.sql          # Migrations: v2 UNIQUE index, v3 reward_points column
+│   ├── .db-version                 # Marker file ('shuffle-v1'); Run.bat checks this
 │   └── redmushroom.db              # generated, gitignored
 │
+├── fonts/                          # Source bopomofo fonts (deduped from public/)
+│
 ├── scripts/
-│   ├── setup.mjs                   # Cross-platform installer
+│   ├── setup.mjs                   # Cross-platform installer; writes .db-version
 │   ├── init-db.ts                  # Apply init.sql
 │   ├── seed-minimal.ts             # 10 demo questions + 12 praises + 2 users
 │   ├── generate-questions.ts       # Build Chinese matrix from templates
 │   ├── seed-questions-taiwan.ts    # 57 Taiwan-localised Chinese questions
 │   ├── seed-math.ts                # 32 math questions
 │   ├── seed-praise-library.ts      # 555 praise lines
+│   ├── check-db-fresh.js           # Optional CJS DB-fresh check
+│   ├── python_setup.py             # WSL-safe DB rebuild (uses Python sqlite3 + bcrypt)
 │   ├── questions/                  # Template definitions for matrix
-│   │   ├── templates.ts            # 32 Chinese templates + 4-variant prompts
+│   │   ├── templates.ts            # 32 Chinese templates + 4-variant prompts + shared MEANING_PROMPTS
 │   │   ├── matrix.ts               # Row builder + prompt rotation
+│   │   ├── shuffle.ts              # shuffleSingleChoice() — answer-position shuffler
 │   │   └── zhuyin.ts               # 注音 char→pinyin lookup
 │   └── praises/                    # Praise corpora
 │       ├── general.ts              # 503 lines
@@ -273,10 +326,10 @@ HTTP request
 
 | Table | Purpose | Key columns |
 |-------|---------|-------------|
-| `users` | Accounts | `user_id`, `username`, `password_hash` (bcrypt 12), `role`, `class_id`, `total_exp`, `current_level`, `streak_days`, `is_sen_mode` |
+| `users` | Accounts | `user_id`, `username`, `password_hash` (bcrypt 12), `role`, `class_id`, `total_exp` (EXP), **`reward_points`** (spendable currency, v3 migration), `current_level`, `streak_days`, `is_sen_mode` |
 | `questions` | Question bank | `subject`, `theory_type` (4 enum), `category_type` (8 enum), `question_type` (single_choice / sorting), `content` (JSON ZhuyinChar[]), `options` (JSON), `correct_answer`, `explanation` |
 | `quiz_sessions` | Quiz runs | `session_id`, `user_id`, `theory_type`, `total_score`, `is_passed`, `duration_seconds`, `pvp_mode`, `pvp_target_score`, `pvp_target_secs` |
-| `quiz_details` | Per-answer log | `session_id`, `question_id`, `user_answer`, `is_correct`, `speech_score`, `speech_text` |
+| `quiz_details` | Per-answer log | `session_id`, `question_id`, `user_answer`, `is_correct`, `speech_score`, `speech_text`. **UNIQUE(session_id, question_id)** (v2 migration) — allows `INSERT OR IGNORE` placeholder rows at startQuiz, `UPDATE`d at submitAnswer. |
 | `praise_library` | 555 praise lines | `scenario_type` (7 enum incl. `sen_encouragement`), `tone_type` (enthusiastic / growth_mindset / humorous), `content` |
 | `user_praise_history` | Anti-repeat ledger | last 20 excluded from next pick |
 | `user_stats` | 6-dim cache | `accuracy / stability / versatility / cognition / endurance / fluency` |
@@ -308,15 +361,17 @@ All routes under `/api/quiz/*` and `/api/admin/*` require `Authorization: Bearer
 |--------|------|-------|
 | GET | `/api/quiz/subjects` | List active subjects |
 | GET | `/api/quiz/me/report` | Self student report (level, sessions, error monsters) |
-| POST | `/api/quiz/start` | `{theory_type, subject}` → returns 10 (or 5 for SEN) questions **without `correct_answer`**. Stratified across 8 categories. |
-| POST | `/api/quiz/answer` | `{session_id, question_id, user_answer, speech_text?, speech_score?}` → `{is_correct, explanation}`. Updates error-monster state; +5 XP if speech ≥ 70%. |
-| POST | `/api/quiz/finish` | `{session_id}` → final score, level-up flag, praise, streak_days, reward (or null) |
-| GET | `/api/quiz/session/:id` | Full session with all answers (for Result page + PvP comparison) |
-| GET | `/api/quiz/monsters` | All active error monsters (≤ 20), each with `is_due: boolean` indicating whether `next_review_time` has passed. Due ones come first. |
+| POST | `/api/quiz/start` | `{theory_type, subject}` — `theory_type` accepts `cognitive` / `input` / `usage` / `sociocultural` / `mixed` / `sorting`. Returns 10 (or 5 for SEN) questions **without `correct_answer`**, stratified across 8 categories, 6h-no-repeat filtered, content-fingerprint deduplicated. Pre-inserts placeholder rows into `quiz_details` so abandoned quizzes still count for the no-repeat window. |
+| POST | `/api/quiz/answer` | `{session_id, question_id, user_answer, speech_text?, speech_score?}` → `{is_correct, explanation}`. Updates the pre-inserted placeholder row via UPDATE. Updates error-monster state; +5 XP if speech ≥ 70%. |
+| POST | `/api/quiz/finish` | `{session_id}` → final score, level-up flag, praise, streak_days, reward (or null). Grants both `total_exp` and `reward_points` (same amount). |
+| GET | `/api/quiz/session/:id` | Full session with all answers, including `correct_answer` and `explanation` (for Result page retry panel + PvP comparison). |
+| GET | `/api/quiz/monsters` | All active error monsters (≤ 20), each with `is_due: boolean`. Due ones come first. |
 | POST | `/api/quiz/monsters/review` | `{question_id, user_answer}` → updates SM-2 streak |
 | GET | `/api/quiz/leaderboard` | Class ranking; non-self names masked to first-char + 同學 |
 | GET | `/api/quiz/pvp/classmates` | Same class peers (no full names exposed) |
 | POST | `/api/quiz/pvp/challenge` | Creates a session with target = median(last 5 wins) |
+| **POST** | `/api/quiz/game-score` | **NEW**: `{exp, reward, source}` → adds `exp` to `total_exp` and `reward` to `reward_points`, recomputes level. Validates `0 ≤ exp,reward ≤ 9999`. Called by the typing game (1 EXP + 3 reward points per character destroyed). |
+| **GET** | `/api/quiz/vocab` | **NEW**: Returns up to 120 unique CJK character + bopomofo pairs extracted from question content, shuffled. Used by the typing game for curriculum-grounded vocabulary. |
 
 #### Admin (teacher role required)
 
@@ -371,6 +426,192 @@ $EDITOR scripts/questions/templates.ts
 # Regenerate (idempotent: INSERT OR IGNORE)
 npm run seed:questions
 ```
+
+---
+
+### Score & Reward System
+
+Two independent currencies, both incremented at the same time but with different roles:
+
+| Currency | Column | Purpose | Decreases? |
+|----------|--------|---------|------------|
+| **經驗值 EXP** | `users.total_exp` | Drives the level system (used for level display + progress bar). | Never |
+| **兌換獎品分數** | `users.reward_points` | Spendable currency for the planned reward shop. | Yes, when redeemed |
+
+#### Earning formulae
+
+| Source | EXP gained | reward_points gained |
+|--------|-----------|---------------------|
+| Quiz answered (all 10 questions, regardless of pass) | `total_score` (1:1) | same as EXP |
+| Quiz **passed** (score ≥ 60% of max) | +10 pass bonus | same as EXP |
+| Speech bonus (≥ 70% similarity AND answer correct) | +5 | (not granted) |
+| Typing game (per character destroyed) | +1 | +3 |
+| Mid-quiz exit (`← 離開`) | **0** | **0** |
+
+#### Level thresholds (doubling)
+
+```
+Lv 1→2 :  5,000 EXP
+Lv 2→3 : 10,000 EXP
+Lv 3→4 : 20,000 EXP
+Lv 4→5 : 40,000 EXP
+Lv N→N+1 : 5000 × 2^(N-1) EXP
+```
+
+Same formula used both server-side (`quizService.updateExp`, `/api/quiz/game-score`) and client-side (`SubjectSelector` → `expToLevel`).
+
+#### Score persistence + refresh
+
+- After every quiz `finishQuiz` or typing-game character, the backend updates `users.total_exp / reward_points / current_level` directly.
+- `AuthContext.refreshUser()` re-fetches `/api/auth/me` so the home page shows the latest.
+- `SubjectSelector` calls `refreshUser()` on every mount; `Result` also calls it before rendering the score modal. **This fixes the previous "80 分沒紀錄" bug** which was caused by displaying stale login-time cache.
+
+#### Mid-game exit
+
+Every game (quiz / sorting / mixed / typing) has a unified `← 離開` button. Clicking it calls `resetQuiz()` (or just `navigate('/')` for the typing game) and **discards the in-progress session** — no `finishQuiz` is called, so neither EXP nor reward_points are awarded. `quiz_details` placeholder rows still exist (so the 6h no-repeat window covers what was seen).
+
+---
+
+### Typing Game
+
+`/typing-game` — a 100-level falling-character bopomofo typing challenge.
+
+#### Level zones
+
+| Levels | Speed | Rotation | Target chars to clear | Spawn interval |
+|--------|-------|----------|----------------------|----------------|
+| 1–10 | `0.030` (slow) | None | `lv + 4` (5→14) | 3.6s → 1.8s |
+| 11–50 | `0.036` (slow × 1.2) | None | `lv` (11→50) | 1.8s → 1.2s |
+| 51–100 | `0.039` (slow × 1.3) | Slow rotation 0.3 → 1.8 deg/frame, random ±direction | `lv` (51→100) | 1.2s → 0.8s |
+
+#### Input handling (IME-friendly)
+
+Listens to **`compositionupdate`** + **`compositionend`** events on a focused `<input>`. Because the Chinese IME is left enabled:
+
+- `compositionupdate.data` → contains the **current bopomofo being typed** (e.g. "ㄏㄠˇ"). Shown live in the input strip at the bottom of the screen.
+- `compositionend.data` → contains the **confirmed Chinese character** (e.g. "好"). Matched against falling characters by **character**, not by bopomofo, so polyphonic chars work naturally.
+
+Falling chars are matched by Chinese character; on match the cannon fires (shoot animation + +1 EXP +3 reward_points POSTed to `/api/quiz/game-score`).
+
+#### Vocabulary source
+
+`GET /api/quiz/vocab` returns up to 120 unique CJK chars + their bopomofo, extracted from `questions.content` (which stores `ZhuyinChar[]` JSON). Falls back to a 28-character hardcoded list if the API is unreachable (no token, network error).
+
+#### UI signals
+
+- **3 mushroom lives** 🍄🍄🍄 in HUD; reaching the ground = lose one.
+- **Score** in the top center.
+- **Level progress bar** with `cleared / target`.
+- **Combo flash** ("3連擊！ +20") above the cannon.
+- **Wrong-flash** (red bar) at the bottom when a wrong character is typed.
+- **🎁** Win screen at level 100.
+- **← 離開** button in top right.
+
+#### Score saving
+
+Each character destroyed POSTs `{ exp: 1, reward: 3, source: 'typing-game' }` to `/api/quiz/game-score`. The backend grants both. Mid-game exit keeps all accumulated points (per-character grants are immediate, not deferred).
+
+---
+
+### Bopomofo Font System
+
+The system can render 注音 (bopomofo) in two modes:
+
+#### Mode A: `<ruby>/<rt>` annotation (traditional)
+
+```html
+<ruby>好<rt>ㄏㄠˇ</rt></ruby>
+```
+
+Bopomofo characters are rendered ABOVE the Chinese character via HTML `<ruby>` semantic markup. Works in any font. The default fallback.
+
+#### Mode B: Bopomofo-embedded font
+
+Apply a special font where the bopomofo annotation is part of the glyph itself:
+
+```css
+.bpmf-font {
+  font-family: var(--bpmf-font-family), 'Noto Sans TC', sans-serif;
+  line-height: 1.8;
+}
+```
+
+The font draws the bopomofo NEXT TO the Chinese character automatically. No `<ruby>` markup needed.
+
+#### Bundled fonts (in `frontend/public/fonts/`)
+
+8 bopomofo-annotated fonts are bundled. Bopomofo glyphs are embedded next to each Chinese character via OpenType character variants, so **no `<ruby>` markup is required**.
+
+Sources:
+- **Bpmf\*** family from [ButTaiwan / Bopomofo Variants Set (bpmfvs)](https://github.com/ButTaiwan/bpmfvs) — **Apache License 2.0**
+- **HanWang\*** family from 王漢宗教授 Chinese fonts — freely distributed for any use with attribution
+
+| Font family | Underlying typeface | Source | Style | Size | Best for |
+|-------------|----------------------|--------|-------|------|----------|
+| **`BpmfZihiKai` 字嗨楷體** | ZihiKaiStd 字嗨楷體 (字嗨團隊 — MOE standard kai) | ButTaiwan/bpmfvs | Educational kai (**default**) | 17 MB | Textbook style |
+| `HanWangKaiAnnotated` 王漢宗中楷體注音 | 王漢宗中楷體注音 (王漢宗教授) | Han Wang free-license set | Traditional kai | 14 MB | Alt-kai for comparison |
+| `BpmfHuninn` 粉圓注音 | jf-openhuninn 粉圓 (justfont) | ButTaiwan/bpmfvs | Modern round sans | 4.4 MB | UI, screens |
+| `BpmfGenSenRounded` 源泉圓體 | Gen Sen Rounded 源泉圓體 | ButTaiwan/bpmfvs | Rounded | 7.4 MB | Friendly, low-grade |
+| `BpmfGenYoGothic` 源樣黑體 | Source Han Sans 源樣黑體 (Adobe) | ButTaiwan/bpmfvs | Gothic / sans | 5.2 MB | High readability |
+| `BpmfZihiSerif` 字嗨明體 | ZihiSerif 字嗨明體 (字嗨團隊) | ButTaiwan/bpmfvs | Serif / Mincho | 6.5 MB | Print-book style |
+| `BpmfIansui` 芫荽注音 | Iansui 芫荽 (ButTaiwan) | ButTaiwan/iansui | Handwriting | 7.1 MB | Casual, friendly |
+| `HanWangMingPolyphonic1` 王漢宗中明體破音字一 | 王漢宗中明體破音一 (王漢宗教授) | Han Wang free-license set | Serif w/ polyphonic readings | 3.3 MB | Teaching multi-pronunciation characters |
+
+The `unicode-range` rule plus `font-display: swap` means each font is only downloaded when actually selected — adding fonts to the dropdown does **not** inflate the initial JS bundle.
+
+License files for each font (`LICENSE-2.0.txt`, `NOTICE.txt`, etc.) are kept alongside the source TTFs in `fonts/<family>/`.
+
+#### Configuration
+
+- Selector dropdown on the home page header (next to the language switcher)
+- Choice persisted in `localStorage['rm_bpmf_font']`
+- Default: `BpmfZihiKai` (closest to grade-school textbook style)
+- Sets CSS variable `--bpmf-font-family` on `<html>` — every `.bpmf-font` element updates instantly
+- Option `不用字型（標註注音）` reverts to `<ruby>/<rt>` mode
+
+#### Applied to
+
+- `<ZhuyinText>` component (auto-switches between modes)
+- Quiz question prompts (`QuizBoard`)
+- Quiz answer-option labels (single-choice + sorting tiles)
+- Error monster review questions + options
+- Result page retry panel
+- Typing game falling characters (the small bopomofo capsule is hidden when font mode is active)
+
+---
+
+### Reading Helper (Dictionary Side Panel)
+
+When the student **selects (highlights) any Chinese text** anywhere in the app, a 320 px panel slides in on the right showing:
+
+- The matched word (or longest-prefix match / first-char fallback)
+- **All bopomofo readings** — polyphonic characters list every reading (e.g. 「和」shows 5 readings: ㄏㄜˊ / ㄏㄜˋ / ㄏㄢˋ / ㄏㄨˊ / ˙ㄏㄨㄛ)
+- The MOE-style definition, numbered + example phrases
+- Per-character readings when the whole phrase isn't in the dictionary
+
+#### Data source
+
+Ported from [Bpmf_VSIME / ToneOZ 澳聲通字典](https://toneoz.com) — **MIT License**. The original 268-shard tzdata is merged into a single `backend/data/dictionary.json` (43,986 words / 44,710 entries, 7.8 MB).
+
+| Layer | Path | Notes |
+|------|------|-------|
+| Importer | `scripts/import_dict.py` | Parses `window.tzdic["N"] = {...}` shards, merges, normalises `<br>` → newlines. Re-run when source dictionary updates. |
+| In-memory cache | `backend/src/services/dictService.ts` | Loaded once on first lookup; ~30 MB heap; O(1) `Map` access. |
+| Backend route | `GET /api/dict/lookup?q=詞` | No auth — public reference data. 50-char cap. |
+| Frontend component | `frontend/src/components/common/ReadingHelper.tsx` | Document-level `selectionchange` + `mouseup` listener, 200 ms debounce, single mount in `App.tsx`. |
+
+#### Lookup strategy
+
+1. **Exact match** — `dict[query]`
+2. **Longest prefix** — drop trailing chars until a match is found (≥ 2 chars)
+3. **First char fallback** — always return readings for the first char if known
+4. **Per-char breakdown** — also returned for non-exact matches so the panel can show each character's readings even when the phrase isn't in the dict
+
+#### When the panel appears / hides
+
+- Trigger: text selection that **contains a Chinese character**, length ≤ 40, not inside an `<input>`/`<textarea>`/`contenteditable`
+- Selections **inside the panel itself** are ignored (so highlighting the definition to copy doesn't re-fetch)
+- Close button (×) hides until next selection; selecting different text re-opens
 
 ---
 
@@ -608,35 +849,74 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 7. [資料庫 Schema](#資料庫-schema)
 8. [API 參考](#api-參考)
 9. [題目生成系統](#題目生成系統)
-10. [SEN 模式設計](#sen-模式設計)
-11. [多科目模組](#多科目模組)
-12. [測試](#測試)
-13. [安全設計](#安全設計)
-14. [開發流程](#開發流程)
-15. [疑難排解](#疑難排解)
-16. [授權](#授權)
+10. [分數與獎勵系統](#分數與獎勵系統)
+11. [打字遊戲](#打字遊戲)
+12. [注音字型系統](#注音字型系統)
+13. [選字讀音助手](#選字讀音助手)
+14. [SEN 模式設計](#sen-模式設計)
+15. [多科目模組](#多科目模組)
+16. [測試](#測試)
+17. [安全設計](#安全設計)
+18. [開發流程](#開發流程)
+19. [疑難排解](#疑難排解)
+20. [授權](#授權)
 
 ---
 
 ### 特色功能
 
-- 🧠 **四大學習主題**：語詞認知、語言輸入、語言運用、社文語境；每場測驗鎖定單一主題。
-- 📚 **約 1500 道國語文題目 + 32 道數學題目**：32 模板矩陣（4 主題 × 8 類別 × 多句型）+ 57 道臺灣在地化題目 + 32 道手寫的臺灣情境數學題（新臺幣、坪、YouBike、健保）。
-- 🎲 **分層抽題 + 6 小時不重複**：每場 10 題從 8 個生活情境輪流抽；同一使用者過去 6 小時內答過的題目，下一場不會再出現。
-- 🎮 **RPG 成長系統**：經驗值、等級、連勝、文法小精靈寵物（依四主題 XP 進化）。
-- 🔥 **每日連勝寶箱**：7／14／30 天自動解鎖獎勵（稱號／寵物造型）。
-- 🐲 **錯題怪獸**：SM-2-lite 間隔重複（**1h**／24h／72h／168h／336h；連續答對 3 次「淨化」）。剛被抓到的怪獸 1 小時內就會出現在複習頁，用 **🟢 現在可複習** vs **⏳ 等待 N 分鐘** 區分狀態，打錯立刻有反饋。
-- ⚔️ **班級競技場**：挑戰過去 5 場自己的中位數——挑戰昨天的你，而不是同學。
-- 🏆 **班級英雄榜**：同學姓名隱碼成「首字＋同學」（如「林同學」）保護隱私。
-- 🎤 **語音加分**：Web Speech API（zh-TW）；唸題相似度 ≥70% 答對 +5 XP。
+#### 測驗模式
+- 🧠 **四大學習主題**：語詞認知、語言輸入、語言運用、社文語境，單一主題練習。
+- 🎯 **綜合練習**：每場 10 題從 4 個主題各取 2-3 題，跨全 8 個類別。最多元的練習。
+- ✂️ **排句子**：10 題拖曳排序題，全類別覆蓋（`question_type = 'sorting'`）。瓦片隨機初始順序，必須拖曳。
+- 📚 **約 1000+ 國語文題目 + 32 道數學題目**：32 模板矩陣（4 主題 × 8 類別 × 多句型）+ 57 道臺灣在地化 + 32 道臺灣情境數學題。
+
+#### 防重複／品質
+- 🎲 **分層抽題 + 6 小時不重複**：8 個類別輪流抽；6 小時內看過或答過的題目都會被排除。
+- 🛡️ **內容指紋去重**：選項 + 正解相同（例如只換人名）的題目，同一場測驗只出現一題，從同類別其他結構不同的題目補上。
+- 🔀 **答案位置打亂**：每題正解在 1/2/3/4 隨機分布（約各 25%）。
+- 🔄 **拖曳瓦片打亂**：排序題瓦片初始順序為隨機，不是答案順序。
+- 🎨 **多種題目句型**：每個認知模板 4 種句子變體輪換，排序題 3 種。
+
+#### 打字遊戲（注音打字）
+- 🎮 **單字落下打字遊戲**：100 關難度遞增。
+- 🔵 **1–10 關**：正方向、慢速。
+- ⬇️ **11–50 關**：正方向、慢 × 1.2。
+- 🌀 **51–100 關**：旋轉、慢 × 1.3。
+- 🎯 **每關目標**：1–6 關 5/6/.../10，之後 = 關卡數（第 50 關 = 50 字）。
+- 💚 **IME 相容**：使用 `compositionupdate` + `compositionend`，中文輸入法 ON 也能玩，**不需要關閉**。
+- ✏️ **注音即時顯示**：IME 組字時注音動態顯示在底部欄。
+- 🍄 **3 條紅蘑菇命**；單字落地扣一條。
+- 🎯 **連擊系統**：連續打對 1 個以上每次 +5 EXP。
+
+#### 分數系統（雙幣設計）
+- 📊 **經驗值 EXP**（`total_exp`）：從測驗與打字遊戲累積，永不減少，等級用此。
+- 🎁 **兌換獎品分數 reward_points**：獨立的可消費貨幣，與 EXP 同速率累積。預留給未來商店扣減（不影響 EXP）。
+- 🆙 **等級門檻翻倍**：Lv1→2 = 5,000，Lv2→3 = 10,000，Lv3→4 = 20,000 ...（`5000 × 2^(lv-1)`）。
+- 💯 **1:1 分數換 EXP**：得 80 分 → +80 EXP；通過再 +10 獎勵；打字遊戲每字 1 EXP。
+- 🏠 **主畫面分數卡**：等級、進度條、總 EXP、兌換分數、連勝火焰，每場結束後自動刷新。
+- ❌ **中途離開 = 沒分數**（統一的 `← 離開` 按鈕會丟棄進行中的 session）。
+
+#### 其他玩法
+- 🐲 **錯題怪獸**：SM-2-lite 間隔重複（**1h**／24h／72h／168h／336h；連續答對 3 次「淨化」）。剛抓到的怪獸 1 小時內出現，用 **🟢 現在可複習** vs **⏳ 等待 N 分鐘** 區分。
+- ⚔️ **班級競技場**：挑戰過去 5 場自己的中位數。
+- 🏆 **班級英雄榜**：姓名隱碼成「首字＋同學」。
+- 🎤 **語音加分**：Web Speech API（zh-TW）；相似度 ≥70% 答對 +5 XP。
 - 📊 **六維度雷達**：準確率、穩定性、廣泛性、認知、耐力、流暢。
-- 🌟 **SEN 友善模式**：「輕鬆學習模式」——5 題、大字體、單欄、1.8 秒防誤觸 cool-down、50+ 專屬讚美語、吉祥物自動隱藏。**前端絕對不出現任何臨床術語。**
-- 💬 **555 條讚美庫**：503 條一般 + 52 條 SEN 專屬，7 種情境 × 3 種語氣。最近用過的 20 條會被排除，幾乎不會看到重複。
-- 📱 **QR Code 家長入口**：5 分鐘一次性 token（UUID v4）——零雲端帳號、不用裝 app。
-- 👩‍🏫 **老師管理台**：班級總覽、PDF 報告、CSV 匯出。
-- 🌐 **多語言介面**：繁中／英／日／韓（題目維持中文，介面 chrome 多語）。
-- 🐹 **AI 兒童測試員**：內建 4 種 persona 的 Playwright 模擬器（認真／隨機／速答／猜長）做 UX 壓測。
-- 📦 **前端 code-split**：初始 JS bundle 170KB（gzip 55KB），各分頁按需載入。
+- 🔁 **錯題在線再挑戰**：測驗結束後，錯題右邊有「試試」按鈕，旁邊面板答題不計分。支援單選與排序題。
+
+#### 無障礙與 UI
+- 🌟 **SEN 友善模式**：「輕鬆學習模式」——5 題、大字、單欄、1.8 秒防誤觸、50+ 專屬讚美、吉祥物自動隱藏。**絕不出現臨床術語。**
+- ✍️ **注音字型系統**：4 種注音字型（粉圓 Huninn / 芫荽 Iansui / 字嗨楷體 / 源樣黑體）＋傳統 `<ruby>/<rt>` 模式。使用者可選，存 `localStorage`。預設 **字嗨楷體**（最像課本字型）。
+- ← **統一返回按鈕**：每個頁面／遊戲都有一致的 `← 返回`（遊戲中 `← 離開`）。
+
+#### 內容與社群
+- 💬 **555 條讚美庫**：503 一般 + 52 SEN 專屬；最近 20 條被排除。
+- 📱 **QR Code 家長入口**：5 分鐘一次性 token，零雲端帳號。
+- 👩‍🏫 **老師管理台**：班級總覽、PDF、CSV。
+- 🌐 **多語言介面**：繁中／英／日／韓。
+- 🐹 **AI 兒童測試員**：4 種 persona 的 Playwright 模擬器做 UX 壓測。
+- 📦 **前端 code-split**：初始 JS bundle 170KB（gzip 55KB）。
 
 ---
 
@@ -957,6 +1237,194 @@ $EDITOR scripts/questions/templates.ts
 # 重 seed（INSERT OR IGNORE 不會重複）
 npm run seed:questions
 ```
+
+---
+
+### 分數與獎勵系統
+
+#### 雙幣設計
+
+| 欄位 | 用途 | 取得方式 | 何時扣除 |
+|------|------|----------|----------|
+| `total_exp` | 累積經驗值，計算等級用 | 答題分數 + 通過獎勵 + 打字遊戲每字 | **永不扣除** |
+| `reward_points` | 兌換獎品分數，未來商店用 | 與 EXP 同速率累積 | 兌換商品時扣除（不影響 EXP） |
+
+> 兩者是**兩個獨立系統**——花掉 reward_points 不會影響等級。
+
+#### 取得 EXP（與 reward_points 同步加值）
+
+| 來源 | 計算式 |
+|------|--------|
+| 完成 10 題測驗（含中文／數學／綜合／排句子） | `分數 × 1`（每題 10 分，滿分 100） |
+| 通過測驗（≥ 60 分） | 額外 +10 |
+| SEN 模式（5 題） | 上限 50 分；通過門檻 30 分 |
+| 打字遊戲過字 | 每字 +1 EXP（連擊另計 +5） |
+
+> 範例：得 80 分通過 → +80 EXP + 10 通過獎勵 = **90 EXP**（同時 +90 reward_points）。
+
+#### 等級門檻翻倍
+
+```
+Lv1 → 2：5,000 EXP
+Lv2 → 3：10,000
+Lv3 → 4：20,000
+Lv4 → 5：40,000
+... Lvⁿ → ⁿ⁺¹：5000 × 2^(n-1)
+```
+
+實作於 `backend/src/services/quizService.ts::updateExp()`。
+
+#### 分數寫入與刷新
+
+- 後端：每場測驗結束、打字遊戲每字成功都會即時寫 `users.total_exp` + `reward_points`。
+- 前端：首頁（`SubjectSelector`）與結算頁（`Result`）`useEffect` 內呼叫 `refreshUser()`，重抓 `/api/auth/me`。
+  - 解決舊版 bug：「80 分沒紀錄」其實是首頁顯示 login 當下的舊快取。
+
+#### 中途離開不計分
+
+- 所有測驗／遊戲畫面左上有統一 `← 離開` 按鈕。
+- 離開時呼叫 `resetQuiz()`，**不會** call `finishQuiz()`，所以後端 session 沒有 finish_time、不寫 EXP。
+
+---
+
+### 打字遊戲
+
+#### 關卡分區
+
+| 關卡 | 速度（向下落） | 旋轉 | 目標字數 |
+|------|--------------|------|---------|
+| 1–10 | 0.030 px/frame（慢） | 不旋轉，正方向 | 1→5、2→6、…、10→14 |
+| 11–50 | 0.036 px/frame（慢 × 1.2） | 不旋轉，正方向 | = 關卡數 |
+| 51–100 | 0.039 px/frame（慢 × 1.3） | 0.3–1.8 度／frame 緩慢旋轉 | = 關卡數 |
+
+`willRotate = level >= 51`；當 `willRotate === false` 時初始角度強制 0。
+
+#### IME（中文輸入法）相容
+
+不用 `keydown` 直接讀鍵盤——讀 `compositionupdate`（即時注音）+ `compositionend`（組字完成的中文字）。
+
+- 輸入法 ON 也能玩，**不需要切英文**。
+- 注音動態顯示在輸入欄：注音字型 ON 時，下方注音膠囊隱藏，因為字型已含注音。
+- `compositionend` 拿到的字會跟畫面上所有掉落字比對；命中第一個就消除 + 計分。
+
+#### 字源
+
+`GET /api/quiz/vocab` 從 `questions` 表的中文字段抽詞，按國小 3-4 年級高頻字過濾。
+
+#### UI 訊號
+
+- 紅蘑菇 × 3 條命；掉到底部扣一條。
+- 連擊計數（COMBO）：連續打對 N 個字，每個 +5 EXP。
+- 命結束顯示「💀 GAME OVER」+ 再來一次。
+
+#### 分數寫入
+
+每字打對都 `POST /api/quiz/game-score`（小量寫入，後端 batch）。
+
+---
+
+### 注音字型系統
+
+#### 兩種模式
+
+| 模式 | 條件 | 渲染方式 |
+|------|------|----------|
+| **A. 標註模式** | `bpmfFont === 'none'`（且 `showZhuyin === true`） | `<ruby>字<rt>ㄓㄨˋ</rt></ruby>` HTML 標籤 |
+| **B. 字型模式** | `bpmfFont !== 'none'` | 字元加 `bpmf-font` class，字型自動畫注音 |
+| **C. 純文字** | `showZhuyin === false` | 不顯示注音 |
+
+切換瞬間生效（CSS 變數）。
+
+#### CSS 機制
+
+```css
+.bpmf-font {
+  font-family: var(--bpmf-font-family), 'Noto Sans TC', sans-serif;
+  line-height: 1.8;
+}
+```
+
+`ConfigContext` 把選的字型寫進 `document.documentElement.style.setProperty('--bpmf-font-family', "'BpmfZihiKai'")`。
+
+#### 內建字型來源（位於 `frontend/public/fonts/`）
+
+共 8 種注音字型可選。注音以 OpenType 字形合字內嵌在每個漢字旁，**不需要 `<ruby>` 標籤**。
+
+來源與授權：
+- **Bpmf\*** 系列來自 [ButTaiwan / Bopomofo Variants Set (bpmfvs)](https://github.com/ButTaiwan/bpmfvs)，**Apache License 2.0**
+- **HanWang\*** 系列來自王漢宗教授中文字型，自由授權使用（需保留出處）
+
+| 字型 family | 底層字型 | 出處 | 風格 | 檔案大小 | 適合 |
+|---|---|---|---|---|---|
+| **`BpmfZihiKai` 字嗨楷體** | ZihiKaiStd 字嗨楷體（字嗨團隊，教育部標準楷書） | ButTaiwan/bpmfvs | 教育楷書（**預設**） | 17 MB | 課本字型 |
+| `HanWangKaiAnnotated` 王漢宗中楷體注音 | 王漢宗中楷體注音（王漢宗教授） | 王漢宗自由授權 | 傳統楷書 | 14 MB | 另一種楷書風格 |
+| `BpmfHuninn` 粉圓注音 | jf-openhuninn 粉圓（justfont） | ButTaiwan/bpmfvs | 現代圓體 | 4.4 MB | UI、螢幕閱讀 |
+| `BpmfGenSenRounded` 源泉圓體 | Gen Sen Rounded 源泉圓體 | ButTaiwan/bpmfvs | 柔和圓體 | 7.4 MB | 低年級、親切 |
+| `BpmfGenYoGothic` 源樣黑體 | Source Han Sans 源樣黑體（Adobe） | ButTaiwan/bpmfvs | 黑體 | 5.2 MB | 高可讀性 |
+| `BpmfZihiSerif` 字嗨明體 | ZihiSerif 字嗨明體（字嗨團隊） | ButTaiwan/bpmfvs | 明體 | 6.5 MB | 書本印刷風 |
+| `BpmfIansui` 芫荽注音 | Iansui 芫荽（ButTaiwan） | ButTaiwan/iansui | 手寫風 | 7.1 MB | 親切、休閒 |
+| `HanWangMingPolyphonic1` 王漢宗中明體破音字一 | 王漢宗中明體破音一（王漢宗教授） | 王漢宗自由授權 | 明體＋破音字異讀 | 3.3 MB | 多音字教學 |
+
+每個字型的授權文件（`LICENSE-2.0.txt` 等）保留在 `fonts/<family>/` 與字型檔一起。
+
+> **載入效率**：`unicode-range` + `font-display: swap` 讓字型只在使用者真正選到時才下載，加更多字型不會影響初始 JS bundle。
+
+#### 設定
+
+- 首頁右上下拉選單（語言切換器旁）
+- 選擇存 `localStorage['rm_bpmf_font']`
+- 預設 `BpmfZihiKai`（最像國小課本字型）
+- 「不用字型（標註注音）」回到傳統 `<ruby>/<rt>` 模式
+
+#### 應用範圍
+
+- `<ZhuyinText>` 元件（自動切兩種模式）
+- 測驗題目（`QuizBoard`）
+- 答案選項（單選 + 排序瓦片）
+- 錯題怪獸複習題目 + 選項
+- 結算頁試試面板
+- 打字遊戲掉落字（字型模式時下方注音膠囊自動隱藏）
+
+---
+
+### 選字讀音助手
+
+**選任意中文字（題目／答案／釋義），右方自動浮出「讀音 + 釋義」面板**——破音字會列出全部讀音。
+
+#### 範例顯示
+
+選「和」會顯示 5 種讀音：
+| 注音 | 釋義（節選） |
+|------|-----------|
+| ㄏㄜˊ | 1.各數相加的總數。總和 2.平息爭端、停止爭鬥。 |
+| ㄏㄜˋ | 1.聲音相應。附和、唱和 |
+| ㄏㄢˋ | 連接詞，相當於「跟」。 |
+| ㄏㄨˊ | 牌戲中某一方的牌已湊齊成副而獲勝。和牌 |
+| ˙ㄏㄨㄛ | 溫暖的。暖和 |
+
+#### 資料來源
+
+移植自 [Bpmf_VSIME / ToneOZ 澳聲通字典](https://toneoz.com)，**MIT 授權**。把原本 268 個 tzdata 分片合併成單一 `backend/data/dictionary.json`（43,986 詞 / 44,710 筆，7.8 MB）。
+
+| 層 | 路徑 | 說明 |
+|------|------|-----|
+| 匯入腳本 | `scripts/import_dict.py` | 解析 `window.tzdic["N"] = {...}` 分片，合併、`<br>` 換成換行 |
+| 後端快取 | `backend/src/services/dictService.ts` | 首次查詢時載入 ~30 MB heap，O(1) `Map` 查表 |
+| 後端 API | `GET /api/dict/lookup?q=詞` | 不需登入（公開參考資料）、50 字上限 |
+| 前端元件 | `frontend/src/components/common/ReadingHelper.tsx` | document 級 `selectionchange` + `mouseup` 監聽，200 ms debounce，App.tsx 內單一掛載 |
+
+#### 查詢策略
+
+1. **完全比對** — `dict[query]`
+2. **最長字首** — 從右邊掉字直到比對到（≥ 2 字）
+3. **首字 fallback** — 至少給首字的讀音
+4. **逐字分解** — 整詞不在字典時，順便列出每字的讀音供面板顯示
+
+#### 觸發／隱藏
+
+- 觸發：選取**含中文**的字串，長度 ≤ 40，且不在 `<input>`／`<textarea>`／contenteditable 內
+- 在面板**裡面**的選取會被忽略（複製釋義不會重新查詢）
+- × 關閉按鈕只在下次選字才會再出現
 
 ---
 

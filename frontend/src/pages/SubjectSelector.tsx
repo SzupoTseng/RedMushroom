@@ -180,7 +180,23 @@ export default function SubjectSelector() {
       </div>
 
       {/* 額外功能 */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mt-4">
+        <button
+          onClick={() => navigate('/reading-tool')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+        >
+          <div className="text-3xl mb-1">📖</div>
+          <div className="font-black text-gray-800">讀音工具</div>
+          <div className="text-xs text-gray-500 mt-1">貼上文章自動標注音、查破音字</div>
+        </button>
+        <button
+          onClick={() => navigate('/ext/stroke')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+        >
+          <div className="text-3xl mb-1">🖋</div>
+          <div className="font-black text-gray-800">筆順練習</div>
+          <div className="text-xs text-gray-500 mt-1">筆順動畫＋臨摹練習</div>
+        </button>
         <button
           onClick={() => navigate('/typing-game')}
           className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-mushroom-200 bg-indigo-50"
@@ -188,6 +204,14 @@ export default function SubjectSelector() {
           <div className="text-3xl mb-1">🎮</div>
           <div className="font-black text-gray-800">打字遊戲</div>
           <div className="text-xs text-gray-500 mt-1">注音打字消滅單字</div>
+        </button>
+        <button
+          onClick={() => navigate('/word-typing')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-emerald-200 bg-emerald-50"
+        >
+          <div className="text-3xl mb-1">🍄</div>
+          <div className="font-black text-gray-800">語詞快打</div>
+          <div className="text-xs text-gray-500 mt-1">蘑菇射種子打恐龍、100 關</div>
         </button>
         <button
           onClick={() => navigate('/monsters')}
@@ -213,6 +237,41 @@ export default function SubjectSelector() {
           <div className="font-black text-gray-800">挑戰過去的自己</div>
           <div className="text-xs text-gray-500 mt-1">PvP 競技場</div>
         </button>
+      </div>
+
+      {/* 擴充模組區 — clean-room 重寫的輔助工具 */}
+      <div className="mt-6">
+        <div className="flex items-center gap-3 mb-3">
+          <h2 className="font-bold text-gray-700">🧩 擴充模組</h2>
+          <div className="flex-1 border-t border-gray-200" />
+          <span className="text-xs text-gray-400">輔助工具・可列印</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => navigate('/ext/math')}
+            className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+          >
+            <div className="text-3xl mb-1">📝</div>
+            <div className="font-black text-gray-800">數學練習產生器</div>
+            <div className="text-xs text-gray-500 mt-1">加減乘除自動出題、可列印</div>
+          </button>
+          <button
+            onClick={() => navigate('/ext/writing-grid')}
+            className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+          >
+            <div className="text-3xl mb-1">✍️</div>
+            <div className="font-black text-gray-800">田字格習字紙</div>
+            <div className="text-xs text-gray-500 mt-1">空白格＋描紅、可列印</div>
+          </button>
+          <button
+            onClick={() => navigate('/ext/worksheet')}
+            className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+          >
+            <div className="text-3xl mb-1">📋</div>
+            <div className="font-black text-gray-800">練習單列印</div>
+            <div className="text-xs text-gray-500 mt-1">從本機題庫抽題、可列印</div>
+          </button>
+        </div>
       </div>
     </div>
   );

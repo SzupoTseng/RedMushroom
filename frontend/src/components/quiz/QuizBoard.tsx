@@ -15,6 +15,10 @@ export default function QuizBoard() {
   const [submitted, setSubmitted] = useState(false);
   const [coolingDown, setCoolingDown] = useState(false);
   const [speechResult, setSpeechResult] = useState<{ score: number; text: string } | null>(null);
+  // 題目切換轉場：顯示「第 N 題」splash，遮蔽舊題、引導視線到新題。
+  // splashNum 在進場時 snapshot，避免切題後 currentIndex 變動造成數字跳號。
+  const [transitioning, setTransitioning] = useState(false);
+  const [splashNum, setSplashNum] = useState<number>(0);
 
   const { questions, currentIndex } = state;
   const question = questions[currentIndex];
@@ -24,26 +28,44 @@ export default function QuizBoard() {
   const isLast = currentIndex === questions.length - 1;
 
   const handleSelect = async (answer: string) => {
-    if (submitted || coolingDown || state.phase === 'SUBMITTING') return;
+    if (submitted || coolingDown || state.phase === 'SUBMITTING' || transitioning) return;
     setSelected(answer);
     setSubmitted(true);
     setCoolingDown(true);
 
     await submitAnswer(question.question_id, answer, speechResult ?? undefined);
 
-    // 短暫延遲讓使用者看到正確/錯誤反饋，再推進題目。
-    // SEN 模式使用 1800ms（含防誤觸 cool-down），一般模式使用 1200ms。
-    setTimeout(async () => {
-      setSelected(null);
-      setSubmitted(false);
-      setCoolingDown(false);
-      setSpeechResult(null);
-      if (isLast) {
-        await finishQuiz();
-      } else {
-        nextQuestion();
-      }
-    }, sen ? 1800 : 1200);
+    // 流程：
+    //   1. 反饋 dwell（看見對／錯）— SEN 1400ms / 一般 900ms
+    //   2. 轉場 splash「第 N 題」— 700ms（中途切到下一題；新題從右滑入）
+    //   3. 解鎖 — 可作答下一題
+    const dwell = sen ? 1400 : 900;
+    const splashDuration = 700;
+    const advanceAt = 350; // 在 splash 進行到一半時切題（這樣新題在 splash 後段已就位）
+
+    setTimeout(() => {
+      // Snapshot 下一題的人類編號（1-based），避免 currentIndex 變動造成跳號
+      setSplashNum(Math.min(currentIndex + 2, questions.length));
+      setTransitioning(true);
+
+      // 切到下一題（或結算）
+      setTimeout(async () => {
+        setSelected(null);
+        setSubmitted(false);
+        setSpeechResult(null);
+        if (isLast) {
+          await finishQuiz();
+        } else {
+          nextQuestion();
+        }
+      }, advanceAt);
+
+      // 解鎖
+      setTimeout(() => {
+        setTransitioning(false);
+        setCoolingDown(false);
+      }, splashDuration);
+    }, dwell);
   };
 
   const progress = (currentIndex / questions.length) * 100;
@@ -74,8 +96,31 @@ export default function QuizBoard() {
         </div>
       </div>
 
-      {/* 題目內容 */}
-      <div className="card flex-1 mb-6">
+      {/* 轉場 splash：「第 N 題」遮蔽舊題、引導視線到新題 */}
+      {transitioning && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none"
+          aria-live="polite"
+        >
+          <div className="quiz-splash bg-mushroom-500 text-white rounded-3xl px-12 py-8 shadow-2xl">
+            <div className="text-center">
+              <div className="text-6xl mb-2">🍄</div>
+              <div className={`font-black ${sen ? 'text-4xl' : 'text-3xl'}`}>
+                第 {splashNum} 題
+              </div>
+              <div className={`opacity-80 mt-1 ${sen ? 'text-base' : 'text-sm'}`}>
+                準備好了嗎？
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 題目內容 — key 確保切題時 React 重新掛載，觸發 slide-in 動畫 */}
+      <div
+        key={`q-${currentIndex}`}
+        className="card flex-1 mb-6 quiz-card-anim"
+      >
         <p className={`mb-3 ${sen ? 'text-base text-gray-500' : 'text-sm text-gray-400'}`}>
           {question.question_type === 'sorting' ? '請排出正確語序：' : '請選出正確答案：'}
         </p>

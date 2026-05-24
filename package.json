@@ -13,7 +13,8 @@
     "seed:questions": "npx tsx scripts/generate-questions.ts",
     "seed:tw": "npx tsx scripts/seed-questions-taiwan.ts",
     "seed:math": "npx tsx scripts/seed-math.ts",
-    "seed:praise": "npx tsx scripts/seed-praise-library.ts"
+    "seed:praise": "npx tsx scripts/seed-praise-library.ts",
+    "seed:dict": "npx tsx scripts/import-dict.ts"
   },
   "dependencies": {
     "concurrently": "^8.2.2"

@@ -185,8 +185,24 @@ CREATE TABLE IF NOT EXISTS mobile_linking_tokens (
 );
 
 -- ─────────────────────────────────────────
+-- Dictionary（注音 + 釋義字典，來源：ToneOZ tzdic）
+-- 同一 word 可有多筆（破音字），reading_idx 區分（0=主讀音）
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS dictionary (
+  dict_id     INTEGER PRIMARY KEY,
+  word        TEXT NOT NULL,
+  reading_idx INTEGER NOT NULL DEFAULT 0,
+  zhuyin      TEXT NOT NULL,
+  definition  TEXT NOT NULL,
+  UNIQUE(word, reading_idx)
+);
+
+-- ─────────────────────────────────────────
 -- 索引優化
 -- ─────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_dict_word
+  ON dictionary(word);
+
 CREATE INDEX IF NOT EXISTS idx_theory_question
   ON questions(theory_type, question_id);
 

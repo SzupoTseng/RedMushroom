@@ -8,6 +8,7 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 import authRouter from './routes/auth';
 import quizRouter from './routes/quiz';
 import adminRouter from './routes/admin';
+import dictRouter from './routes/dict';
 import { errorHandler } from './middlewares/errorHandler';
 import { getDb } from './db/database';
 
@@ -30,6 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/quiz', quizRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/dict', dictRouter);
 
 // 健康檢查
 app.get('/api/health', (_req, res) => {
