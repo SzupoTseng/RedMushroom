@@ -139,3 +139,30 @@ export function getMe(req: Request, res: Response): void {
 
   res.json({ user });
 }
+
+/**
+ * PATCH /api/auth/me — 學生更新個人資料（目前只支援中文姓名 display_name）。
+ * 限制：1–12 字，僅允許中文／英數字／空白。
+ */
+export function updateMe(req: Request, res: Response): void {
+  const db = getDb();
+  const userId = req.user!.user_id;
+  const { display_name } = req.body as { display_name?: string };
+
+  if (typeof display_name !== 'string') {
+    res.status(400).json({ error: '請提供 display_name' });
+    return;
+  }
+  const trimmed = display_name.trim();
+  if (trimmed.length < 1 || trimmed.length > 12) {
+    res.status(400).json({ error: '姓名長度需為 1–12 字' });
+    return;
+  }
+  if (!/^[一-鿿A-Za-z0-9 ]+$/.test(trimmed)) {
+    res.status(400).json({ error: '姓名只允許中文、英文、數字、空白' });
+    return;
+  }
+
+  db.prepare('UPDATE users SET display_name = ? WHERE user_id = ?').run(trimmed, userId);
+  res.json({ ok: true, display_name: trimmed });
+}

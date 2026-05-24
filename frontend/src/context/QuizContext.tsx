@@ -95,7 +95,7 @@ interface QuizContextValue {
     question_id: number,
     answer: string,
     speech?: { score: number; text: string }
-  ) => Promise<void>;
+  ) => Promise<boolean | null>;
   nextQuestion: () => void;
   finishQuiz: () => Promise<void>;
   resetQuiz: () => void;
@@ -146,8 +146,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       question_id: number,
       answer: string,
       speech?: { score: number; text: string }
-    ) => {
-      if (!state.sessionId) return;
+    ): Promise<boolean | null> => {
+      if (!state.sessionId) return null;
       dispatch({ type: 'SET_PHASE', payload: 'SUBMITTING' });
       try {
         const res = await authFetch('/api/quiz/answer', {
@@ -166,8 +166,10 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
           payload: { question_id, answer, is_correct: data.is_correct },
         });
         dispatch({ type: 'SET_PHASE', payload: 'QUIZ' });
+        return data.is_correct;
       } catch {
         dispatch({ type: 'SET_PHASE', payload: 'QUIZ' });
+        return null;
       }
     },
     [authFetch, state.sessionId]

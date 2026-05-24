@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useQuiz } from '../context/QuizContext';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 import BpmfFontSelector from '../components/common/BpmfFontSelector';
+import Greeting from '../components/common/Greeting';
 import { useTranslation } from '../i18n';
 import type { TheoryType } from '../types';
 
@@ -133,6 +134,9 @@ export default function SubjectSelector() {
           </button>
         </div>
       </div>
+
+      {/* 學生中文姓名（可內嵌編輯） */}
+      <Greeting />
 
       {/* 分數卡片 */}
       {user && !user.is_sen_mode && (

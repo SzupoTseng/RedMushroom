@@ -24,15 +24,20 @@
 9. [Question Generation System](#question-generation-system)
 10. [Score & Reward System](#score--reward-system)
 11. [Typing Game](#typing-game)
-12. [Bopomofo Font System](#bopomofo-font-system)
-13. [Reading Helper (Dictionary Side Panel)](#reading-helper-dictionary-side-panel)
-14. [SEN Mode Design](#sen-mode-design)
-15. [Multi-Subject Modules](#multi-subject-modules)
-16. [Testing](#testing)
-17. [Security](#security)
-18. [Development Workflow](#development-workflow)
-19. [Troubleshooting](#troubleshooting)
-20. [License](#license)
+12. [Word Typing Game (PvZ-style)](#word-typing-game-pvz-style)
+13. [Bopomofo Font System](#bopomofo-font-system)
+14. [Reading Helper (Dictionary Side Panel)](#reading-helper-dictionary-side-panel)
+15. [Reading Tool (Annotate an Article)](#reading-tool-annotate-an-article)
+16. [Extension Modules (Printable Worksheets & Stroke Practice)](#extension-modules-printable-worksheets--stroke-practice)
+17. [Student Name & Belonging System](#student-name--belonging-system)
+18. [Quiz Transition Effects](#quiz-transition-effects)
+19. [SEN Mode Design](#sen-mode-design)
+20. [Multi-Subject Modules](#multi-subject-modules)
+21. [Testing](#testing)
+22. [Security](#security)
+23. [Development Workflow](#development-workflow)
+24. [Troubleshooting](#troubleshooting)
+25. [License](#license)
 
 ---
 
@@ -40,48 +45,60 @@
 
 #### Quiz modes
 - 🧠 **4 Learning Theories**: Cognitive, Input, Usage, Sociocultural — single-theory focus.
-- 🎯 **綜合練習 (Mixed Mode)**: One 10-question quiz pulls 2–3 from EACH theory, stratified across all 8 categories. Most diverse practice.
-- ✂️ **排句子 (Sorting-only Mode)**: 10 drag-to-arrange questions drawn from all categories (`question_type = 'sorting'`). Tiles spawn in randomised order so the kid actually has to drag.
-- 📚 **~1,000+ Chinese + 32 Math Questions**: 32-template matrix (4 theory × 8 category × prompt variants) + 57 Taiwan-localised seeds + 32 math problems in Taiwan contexts (NTD, 坪, YouBike, 健保).
+- 🎯 **Mixed Mode**: One 10-question quiz pulls 2–3 from each theory, stratified across all 8 categories. Most diverse practice.
+- ✂️ **Sorting-only Mode**: 10 drag-to-arrange questions drawn from all categories (`question_type = 'sorting'`). Tiles spawn in randomised order so the student actually has to drag.
+- 📚 **~1,920+ Chinese + 32 Math Questions**: 32-template matrix (4 theory × 8 category × prompt variants) + 57 Taiwan-localised seeds + 32 math problems in Taiwan contexts (NTD, ping, YouBike, NHI) + 85 supplementary questions on measure words, antonyms, synonyms, seasons, animals, time expressions, and sentence patterns.
 
 #### Anti-repetition / quality
 - 🎲 **Stratified Sampling + 6h No-Repeat**: Round-robins all 8 life-context categories; skips any question the same user saw OR answered in the last 6 hours.
-- 🛡️ **Content-fingerprint Deduplication**: Even if two `question_id`s have identical options+correct_answer (e.g. only the actor name differs), only one is shown per quiz — refills from a structurally different question in the same category.
+- 🛡️ **Content-fingerprint Deduplication**: Even if two `question_id`s have identical options + correct_answer (e.g. only the actor name differs), only one is shown per quiz — refills from a structurally different question in the same category.
 - 🔀 **Shuffled Answer Positions**: Each question's correct answer is shuffled into one of 4 slots at seed time. Distribution roughly 25% / 25% / 25% / 25%.
 - 🔄 **Drag-tile Shuffle**: Sorting questions display tiles in random order (not the answer order).
-- 🎨 **Multiple Prompt Phrasings**: Each cognitive template rotates through 4 question wordings, plus sorting through 3.
+- 🎨 **Multiple Prompt Phrasings**: Each cognitive template rotates through 4 question wordings; sorting through 3.
+- 🧹 **Disputed-question Audit**: 3 sorting templates that produced ambiguous orderings (where two arrangements both read naturally in Mandarin) were redesigned, and 196 existing ambiguous rows were removed from the DB.
 
-#### Typing game (注音打字遊戲)
-- 🎮 **Falling-character typing game**: 100 levels of escalating difficulty.
-- 🔵 **Levels 1–10**: upright text, slow.
-- ⬇️ **Levels 11–50**: upright text, slow × 1.2.
-- 🌀 **Levels 51–100**: rotating text, slow × 1.3.
-- 🎯 **Per-level target**: 5/6/…/10 (levels 1–6 ramp), then = level number (level 50 = 50 characters).
-- 💚 **IME-compatible**: uses `compositionupdate` + `compositionend` so users can type bopomofo with the Chinese IME on. No need to disable input method.
-- ✏️ **Real-time bopomofo display**: shows the bopomofo being typed in the input area as the IME composes.
-- 🍄 **3 mushroom lives**; a character reaching the ground deducts one.
-- 🎯 **Combo system**: +5 EXP per consecutive hit above 1.
+#### Typing games
+- 🎮 **Character Typing Game**: 100 levels of falling characters; type the bopomofo to vaporise each one.
+- 🍄 **Word Typing Game (PvZ-style)**: dinosaur slowly closes in from the right while words float in; correct typed word fires a mushroom seed that hits the word AND pushes the dinosaur back. 100 levels × 2-minute timer each. Vocabulary = 1,000 most common 2-character compounds derived locally from our MIT-licensed dictionary.
+- 💚 **IME-compatible**: uses `compositionupdate` + `compositionend` so users can type with the Chinese IME on. No need to disable input method.
+- ✏️ **Real-time bopomofo display**: shows the bopomofo being composed.
 
 #### Scoring & rewards (two-currency system)
-- 📊 **經驗值 EXP** (`total_exp`): grows from quizzes and the typing game; never decreases. Drives the level system.
-- 🎁 **兌換獎品分數 reward_points**: a separate spendable currency, earned at the same rate as EXP. Reserved for the planned reward shop where redemption deducts from this balance only (EXP unaffected).
+- 📊 **EXP (`total_exp`)**: grows from quizzes and games; never decreases. Drives the level system.
+- 🎁 **Reward Points (`reward_points`)**: a separate spendable currency, earned alongside EXP. Reserved for the planned reward shop where redemption deducts from this balance only.
 - 🆙 **Level thresholds double per level**: Lv1→2 = 5,000 EXP, Lv2→3 = 10,000, Lv3→4 = 20,000, … (`5000 × 2^(lv-1)`).
-- 💯 **1:1 score → EXP**: get 80 in a quiz → +80 EXP; +10 bonus if you pass; typing game gives 1 EXP per character.
+- 💯 **1:1 score → EXP**: 80 in a quiz → +80 EXP; +10 bonus if you pass; typing games credit per character or per word.
 - 🏠 **Home page score card**: Lv, progress bar, total EXP, reward points, streak fire — all auto-refresh after each game.
-- ❌ **Mid-quiz exit = no score** (the unified `← 離開` button discards the in-progress session).
+- ❌ **Mid-quiz exit = no score** (the unified back-button discards the in-progress session).
 
 #### Other gameplay
-- 🐲 **Error Monsters**: SM-2-lite spaced repetition (**1h** / 24h / 72h / 168h / 336h; 3 consecutive corrects "purifies"). Newly-trapped monsters surface within an hour; UI marks them **🟢 現在可複習** vs **⏳ 等待 N 分鐘**.
+- 🐲 **Error Monsters**: SM-2-lite spaced repetition (**1h** / 24h / 72h / 168h / 336h; 3 consecutive corrects purifies). Newly-trapped monsters surface within an hour; UI marks them as due (green pill) or waiting (yellow pill).
 - ⚔️ **Async PvP Arena**: Challenge the median of your own past 5 sessions.
-- 🏆 **Class Hero Leaderboard**: Names privacy-masked to first-character + 同學.
+- 🏆 **Class Leaderboard**: Names privacy-masked to first-character + a suffix.
 - 🎤 **Speech Bonus XP**: Web Speech API (zh-TW); +5 XP for ≥70% Dice-bigram similarity.
 - 📊 **6-Dimension Radar**: Accuracy, Stability, Breadth, Cognitive, Endurance, Fluency.
-- 🔁 **Inline Wrong-answer Retry**: After a quiz, each wrong question gets a 試試 button that opens a side panel — answer again with no score impact. Works for both single-choice and sorting questions.
+- 🔁 **Inline Wrong-answer Retry**: After a quiz, each wrong question gets a retry button that opens a side panel — answer again with no score impact. Works for both single-choice and sorting questions.
+
+#### Reading & vocabulary tools
+- 📖 **Reading Helper**: Select any Chinese text anywhere in the app — a side panel slides in showing every bopomofo reading (polyphonic chars list all variants) plus the dictionary definition. Backed by a 44,000-word MIT-licensed dictionary loaded into memory.
+- 📖 **Reading Tool**: Paste any article, click Start, and every character gets its primary bopomofo annotation. Polyphonic characters are highlighted yellow; click one to pick a reading from a bottom strip showing the same character with each reading variant.
+- 🖋 **Stroke Practice**: Type any characters; each becomes an animated Hanzi Writer card with playback, trace-quiz, and reset. Powered by `hanzi-writer` (MIT) + Make-Me-A-Hanzi data via CDN.
+
+#### Extension modules (printable worksheets)
+- 📝 **Math Practice Generator**: Pure procedural addition/subtraction/multiplication/division with configurable range, count, and multi-operand chains. Print-friendly (CSS @media print hides controls).
+- ✍️ **Tianzige Writing Grid**: CSS-rendered 4-square or 9-square grids with optional sample fill and faded tracing rows. No stroke-data dependency.
+- 📋 **Print Worksheet**: Pulls a random sample from the local question bank into a printable worksheet with name/class/date/score header. Teacher-version toggle reveals answers.
 
 #### Accessibility & UI
-- 🌟 **SEN-Friendly Mode**: "輕鬆學習模式" — 5 questions, larger fonts, single-column, 1.8s anti-mistap cooldown, dedicated 50+ praise lines, mascot hides. Never uses clinical terms.
-- ✍️ **Bopomofo Font System**: 4 bundled bopomofo fonts (粉圓 Huninn / 芫荽 Iansui / 字嗨楷體 / 源樣黑體) plus the traditional `<ruby>/<rt>` mode. User-selectable, persisted in `localStorage`. Default: **字嗨楷體 (educational kai)**, the closest to actual textbook style.
-- ← **Unified back button**: Every page/game has a consistent `← 返回` (or `← 離開` mid-game) for confident navigation.
+- 🌟 **SEN-Friendly Mode**: "Easy Learning Mode" — 5 questions, larger fonts, single-column, 1.8s anti-mistap cooldown, dedicated 50+ praise lines, mascot hides. Never uses clinical terms.
+- ✍️ **Bopomofo Font System**: 8 bundled bopomofo fonts (Huninn, Iansui, ZihiKai, GenYoGothic, GenSenRounded, ZihiSerif, HanWang Kai, HanWang Ming polyphonic) plus the traditional ruby tag mode. User-selectable, persisted in `localStorage`. Default: ZihiKai (closest to a school textbook).
+- 🎴 **Vertical Bopomofo Layout**: A reusable `BopomofoColumn` component lays out the bopomofo with the syllable initials/medials/finals stacked vertically and the tone mark to the right — matching Taiwan textbook convention. Used in the reading panel, reading tool, dictionary pills, and the dictionary cards in the per-character readings table.
+- ✨ **Quiz Transition Effects**: Between questions, a splash card with the upcoming question number animates in; the new question card slides in from the right. Designed so the student visibly knows the question changed (replaces an earlier silent snap).
+- ← **Unified back button**: Every page and game has a consistent back button (mid-game button discards the session).
+
+#### Student name & belonging system
+- 👋 **Editable Chinese name on the home page**: A prominent welcome card shows the student's display name; click to edit inline (1–12 chars, validated server-side).
+- 💬 **Personalised feedback**: In the quiz, the header reads "{name} keep going!" and after each answer the screen flashes "{name}, correct!" or "{name}, try again" — the name shows up everywhere to reinforce identity and ownership.
 
 #### Content & community
 - 💬 **555-line Praise Library**: 503 general + 52 SEN-specialty; last 20 excluded from the next pick.
@@ -89,7 +106,7 @@
 - 👩‍🏫 **Teacher Dashboard**: Class overview, PDF reports, CSV export.
 - 🌐 **Multi-language UI**: zh-TW / English / Japanese / Korean.
 - 🐹 **AI Child Tester**: Built-in 4-persona Playwright simulator for UX stress testing.
-- 📦 **Code-split frontend**: Initial JS bundle 170KB (gzip 55KB).
+- 📦 **Code-split frontend**: Initial JS bundle 170KB (gzip 55KB); the 7.8 MB dictionary and 1,000-word vocabulary are lazy-loaded only when their feature is opened.
 
 ---
 

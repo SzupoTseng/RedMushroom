@@ -58,9 +58,12 @@ export default function ScoreModal({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto animate-pop flex gap-6">
+    // animate-pop 在進場時會套 transform。為了避免 @hello-pangea/dnd 的拖曳
+    // 跟祖先 transform 衝突，pop 動畫只套在「左欄」（分數區）上，
+    // 右欄 retry 面板（含 SortingDisplay）永遠沒 transform 祖先。
+    <div className="w-full max-w-4xl mx-auto flex gap-6">
       {/* ── 左欄：分數 + 題目清單 ── */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 animate-pop">
         {/* 結果卡 */}
         <div className="card mb-4 text-center">
           <div className="text-5xl mb-2">{isPassed ? '🎉' : '💪'}</div>

@@ -203,8 +203,11 @@
     transform: translateX(0);
   }
 }
+/* fill-mode: backwards 只在動畫前套用 "from"，動畫結束後回到基準（不殘留 transform）。
+ * 殘留 translateX(0) 會建立 transform containing block，
+ * 導致 @hello-pangea/dnd 拖曳項目用 fixed 定位時座標算錯而飄走。 */
 .quiz-card-anim {
-  animation: quiz-card-slide-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: quiz-card-slide-in 380ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes quiz-splash-pop {
