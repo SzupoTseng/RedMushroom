@@ -1,7 +1,7 @@
 # RedMushroom（紅蘑菇）🍄
 
 > Digital Chinese & Math Learning System for Elementary School (Grades 3–4)
-> 國小 3-4 年級國語文／數學數位學習系統
+> Mandarin and Math practice for Taiwan elementary grades 3–4.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -238,7 +238,7 @@ RedMushroom/
 │   │   ├── templates.ts            # 32 Chinese templates + 4-variant prompts + shared MEANING_PROMPTS
 │   │   ├── matrix.ts               # Row builder + prompt rotation
 │   │   ├── shuffle.ts              # shuffleSingleChoice() — answer-position shuffler
-│   │   └── zhuyin.ts               # 注音 char→pinyin lookup
+│   │   └── zhuyin.ts               # bopomofo char → pinyin lookup
 │   └── praises/                    # Praise corpora
 │       ├── general.ts              # 503 lines
 │       └── sen.ts                  # 52 lines
@@ -384,7 +384,7 @@ All routes under `/api/quiz/*` and `/api/admin/*` require `Authorization: Bearer
 | GET | `/api/quiz/session/:id` | Full session with all answers, including `correct_answer` and `explanation` (for Result page retry panel + PvP comparison). |
 | GET | `/api/quiz/monsters` | All active error monsters (≤ 20), each with `is_due: boolean`. Due ones come first. |
 | POST | `/api/quiz/monsters/review` | `{question_id, user_answer}` → updates SM-2 streak |
-| GET | `/api/quiz/leaderboard` | Class ranking; non-self names masked to first-char + 同學 |
+| GET | `/api/quiz/leaderboard` | Class ranking; non-self names masked to first-character + suffix |
 | GET | `/api/quiz/pvp/classmates` | Same class peers (no full names exposed) |
 | POST | `/api/quiz/pvp/challenge` | Creates a session with target = median(last 5 wins) |
 | **POST** | `/api/quiz/game-score` | **NEW**: `{exp, reward, source}` → adds `exp` to `total_exp` and `reward` to `reward_points`, recomputes level. Validates `0 ≤ exp,reward ≤ 9999`. Called by the typing game (1 EXP + 3 reward points per character destroyed). |
@@ -424,13 +424,13 @@ The Chinese question bank is **generated**, not hand-written.
   - `vars` (independent cartesian axes like wrong-answer pools)
   - `prompts` (3–4 variant phrasings rotated by row index)
 - `scripts/questions/matrix.ts` — Cross-joins `data` × `vars`, picks a prompt by `rowIdx % prompts.length`.
-- `scripts/questions/zhuyin.ts` — Char → 注音 lookup; unknown chars get empty pinyin (acceptable).
+- `scripts/questions/zhuyin.ts` — Char → bopomofo lookup; unknown chars get empty pinyin (acceptable).
 
 #### Stratified Sampling + 6h No-Repeat at Quiz Time
 
 `quizService.getBucketsByCategory(subject, theory_type)` caches questions grouped by `category_type` (5-min TTL). `pickDiverseQuestions(buckets, count)` round-robins picks across all 8 buckets, so a normal quiz spans 8 categories and a SEN quiz spans 5 — eliminating the "all 10 questions feel the same" problem.
 
-On top of that, `getRecentlySeenIds(userId, hours=6)` returns the set of distinct `question_id`s the user has answered in the last 6 hours (joined `quiz_details` ↔ `quiz_sessions`). The buckets are filtered by this set before sampling. If the filtered pool falls below the required count (e.g. a brand-new theory with very few questions), it falls back to the full bucket so the user never sees a "題庫不足" error.
+On top of that, `getRecentlySeenIds(userId, hours=6)` returns the set of distinct `question_id`s the user has answered in the last 6 hours (joined `quiz_details` ↔ `quiz_sessions`). The buckets are filtered by this set before sampling. If the filtered pool falls below the required count (e.g. a brand-new theory with very few questions), it falls back to the full bucket so the user never sees an "insufficient question pool" error.
 
 This means: **back-to-back quizzes by the same student show genuinely different questions** until at least 6 hours have passed.
 
@@ -452,8 +452,8 @@ Two independent currencies, both incremented at the same time but with different
 
 | Currency | Column | Purpose | Decreases? |
 |----------|--------|---------|------------|
-| **經驗值 EXP** | `users.total_exp` | Drives the level system (used for level display + progress bar). | Never |
-| **兌換獎品分數** | `users.reward_points` | Spendable currency for the planned reward shop. | Yes, when redeemed |
+| **EXP** | `users.total_exp` | Drives the level system (used for level display + progress bar). | Never |
+| **Reward Points** | `users.reward_points` | Spendable currency for the planned reward shop. | Yes, when redeemed |
 
 #### Earning formulae
 
@@ -463,7 +463,7 @@ Two independent currencies, both incremented at the same time but with different
 | Quiz **passed** (score ≥ 60% of max) | +10 pass bonus | same as EXP |
 | Speech bonus (≥ 70% similarity AND answer correct) | +5 | (not granted) |
 | Typing game (per character destroyed) | +1 | +3 |
-| Mid-quiz exit (`← 離開`) | **0** | **0** |
+| Mid-quiz exit (back button) | **0** | **0** |
 
 #### Level thresholds (doubling)
 
@@ -481,11 +481,11 @@ Same formula used both server-side (`quizService.updateExp`, `/api/quiz/game-sco
 
 - After every quiz `finishQuiz` or typing-game character, the backend updates `users.total_exp / reward_points / current_level` directly.
 - `AuthContext.refreshUser()` re-fetches `/api/auth/me` so the home page shows the latest.
-- `SubjectSelector` calls `refreshUser()` on every mount; `Result` also calls it before rendering the score modal. **This fixes the previous "80 分沒紀錄" bug** which was caused by displaying stale login-time cache.
+- `SubjectSelector` calls `refreshUser()` on every mount; `Result` also calls it before rendering the score modal. **This fixes a previous "score-not-saved" bug** caused by displaying stale login-time cache.
 
 #### Mid-game exit
 
-Every game (quiz / sorting / mixed / typing) has a unified `← 離開` button. Clicking it calls `resetQuiz()` (or just `navigate('/')` for the typing game) and **discards the in-progress session** — no `finishQuiz` is called, so neither EXP nor reward_points are awarded. `quiz_details` placeholder rows still exist (so the 6h no-repeat window covers what was seen).
+Every game (quiz / sorting / mixed / typing) has a unified back button. Clicking it calls `resetQuiz()` (or just `navigate('/')` for the typing game) and **discards the in-progress session** — no `finishQuiz` is called, so neither EXP nor reward_points are awarded. `quiz_details` placeholder rows still exist (so the 6h no-repeat window covers what was seen).
 
 ---
 
@@ -506,7 +506,7 @@ Every game (quiz / sorting / mixed / typing) has a unified `← 離開` button. 
 Listens to **`compositionupdate`** + **`compositionend`** events on a focused `<input>`. Because the Chinese IME is left enabled:
 
 - `compositionupdate.data` → contains the **current bopomofo being typed** (e.g. "ㄏㄠˇ"). Shown live in the input strip at the bottom of the screen.
-- `compositionend.data` → contains the **confirmed Chinese character** (e.g. "好"). Matched against falling characters by **character**, not by bopomofo, so polyphonic chars work naturally.
+- `compositionend.data` → contains the **confirmed Chinese character** the IME just committed. Matched against falling characters by **character**, not by bopomofo, so polyphonic chars work naturally.
 
 Falling chars are matched by Chinese character; on match the cannon fires (shoot animation + +1 EXP +3 reward_points POSTed to `/api/quiz/game-score`).
 
@@ -519,10 +519,10 @@ Falling chars are matched by Chinese character; on match the cannon fires (shoot
 - **3 mushroom lives** 🍄🍄🍄 in HUD; reaching the ground = lose one.
 - **Score** in the top center.
 - **Level progress bar** with `cleared / target`.
-- **Combo flash** ("3連擊！ +20") above the cannon.
+- **Combo flash** ("Combo x3! +20") above the cannon.
 - **Wrong-flash** (red bar) at the bottom when a wrong character is typed.
 - **🎁** Win screen at level 100.
-- **← 離開** button in top right.
+- **Back** button in top right.
 
 #### Score saving
 
@@ -530,14 +530,61 @@ Each character destroyed POSTs `{ exp: 1, reward: 3, source: 'typing-game' }` to
 
 ---
 
+### Word Typing Game (PvZ-style)
+
+A second typing game built around words (2-character compounds) instead of single characters, themed as mushroom vs. dinosaur.
+
+#### Layout
+
+- Mushroom 🍄 fixed at the left edge (the player).
+- Dinosaur 🦖 starts at ~88% and creeps left over the level — with a CSS keyframe bobbing animation so it looks like it's running.
+- Words float in from the right edge and drift left.
+- Bottom input bar: type a word and press Enter to fire.
+
+#### Mechanics
+
+- 100 levels × 2-minute timer.
+- Active words on screen: `min(8, level × 2)` — Lv 1 = 2, Lv 3 = 6, Lv 5+ = 8. Spawn loop maintains this fill level instead of dripping a fixed total.
+- Per-level win condition: clear `min(40, level × 2)` words before time runs out and before the dinosaur reaches you.
+- Dinosaur speed: `0.8 + (level − 1) × 0.04` %/sec (Lv 1 ~100s to reach, Lv 100 ~17s).
+- Word leftward speed: `1.0 + (level − 1) × 0.04` %/sec.
+- A correct match fires a seed bullet, removes the word, and knocks the dinosaur back by `3 + word.length` percentage points.
+- 3 mushroom hearts. A word touching the player drops one heart. Lose when 0 hearts OR dinosaur reaches the player OR time expires.
+- Combo counter: every consecutive hit increments it; the combo flash appears at ≥3.
+
+#### Input behavior
+
+- Pressing Enter is the ONLY trigger for matching. Auto-matching on each composition was removed because it triggered prematurely and could match a partial word.
+- Correct → fires the seed and clears the input.
+- Wrong → input shakes red briefly and is preserved so the player can edit and retry.
+- Between-level overlays: Enter advances to next level / retries / starts. Escape returns home. The input also receives focus automatically once `phase === 'playing'`.
+
+#### Visual feedback
+
+- **Partial match highlight**: while the player types, words whose value starts with the typed prefix are highlighted yellow and scaled up; non-matching words dim. This eliminates "did I type the right one?" anxiety.
+- **Floating +EXP popup**: each successful match emits a small text bubble from the word's position that floats upward and fades.
+- **Combo flash**: at combo ≥ 3, a large center-stage label briefly pops in.
+- **Danger zone**: when the dinosaur crosses the 28% mark, the play area gains a faint pulsing red overlay.
+- **Looming dinosaur**: the dinosaur's `font-size` scales with proximity (3rem far → 5rem close) for visceral pressure.
+
+#### Vocabulary
+
+1,000 most common 2-character compounds. Generated locally from `backend/data/dictionary.json` (MIT-licensed source) by filtering to 2-char words whose individual characters appear in at least 8 compound entries, sorted by aggregate frequency, capped to 1,000. The output is `frontend/public/data/common-words.json` (~48 KB). Regenerate any time with `python3 scripts/build_word_vocab.py`.
+
+#### Score saving
+
+Each correct word POSTs `{ exp: 5 + word.length × 2, reward: half of exp, source: 'word-typing-lv${level}' }` to `/api/quiz/game-score`. Level pass bonus: `10 + level × 2` EXP.
+
+---
+
 ### Bopomofo Font System
 
-The system can render 注音 (bopomofo) in two modes:
+The system can render bopomofo annotation in two modes:
 
 #### Mode A: `<ruby>/<rt>` annotation (traditional)
 
 ```html
-<ruby>好<rt>ㄏㄠˇ</rt></ruby>
+<ruby>{Han char}<rt>{bopomofo}</rt></ruby>
 ```
 
 Bopomofo characters are rendered ABOVE the Chinese character via HTML `<ruby>` semantic markup. Works in any font. The default fallback.
@@ -561,18 +608,18 @@ The font draws the bopomofo NEXT TO the Chinese character automatically. No `<ru
 
 Sources:
 - **Bpmf\*** family from [ButTaiwan / Bopomofo Variants Set (bpmfvs)](https://github.com/ButTaiwan/bpmfvs) — **Apache License 2.0**
-- **HanWang\*** family from 王漢宗教授 Chinese fonts — freely distributed for any use with attribution
+- **HanWang\*** family from the Han Wang professor's Chinese fonts — freely distributed with attribution
 
-| Font family | Underlying typeface | Source | Style | Size | Best for |
-|-------------|----------------------|--------|-------|------|----------|
-| **`BpmfZihiKai` 字嗨楷體** | ZihiKaiStd 字嗨楷體 (字嗨團隊 — MOE standard kai) | ButTaiwan/bpmfvs | Educational kai (**default**) | 17 MB | Textbook style |
-| `HanWangKaiAnnotated` 王漢宗中楷體注音 | 王漢宗中楷體注音 (王漢宗教授) | Han Wang free-license set | Traditional kai | 14 MB | Alt-kai for comparison |
-| `BpmfHuninn` 粉圓注音 | jf-openhuninn 粉圓 (justfont) | ButTaiwan/bpmfvs | Modern round sans | 4.4 MB | UI, screens |
-| `BpmfGenSenRounded` 源泉圓體 | Gen Sen Rounded 源泉圓體 | ButTaiwan/bpmfvs | Rounded | 7.4 MB | Friendly, low-grade |
-| `BpmfGenYoGothic` 源樣黑體 | Source Han Sans 源樣黑體 (Adobe) | ButTaiwan/bpmfvs | Gothic / sans | 5.2 MB | High readability |
-| `BpmfZihiSerif` 字嗨明體 | ZihiSerif 字嗨明體 (字嗨團隊) | ButTaiwan/bpmfvs | Serif / Mincho | 6.5 MB | Print-book style |
-| `BpmfIansui` 芫荽注音 | Iansui 芫荽 (ButTaiwan) | ButTaiwan/iansui | Handwriting | 7.1 MB | Casual, friendly |
-| `HanWangMingPolyphonic1` 王漢宗中明體破音字一 | 王漢宗中明體破音一 (王漢宗教授) | Han Wang free-license set | Serif w/ polyphonic readings | 3.3 MB | Teaching multi-pronunciation characters |
+| Font family identifier | Source project | Style | Size | Best for |
+|-------------|--------|-------|------|----------|
+| **`BpmfZihiKai`** (default) | ButTaiwan/bpmfvs | Educational kai (MOE standard) | 17 MB | Textbook style |
+| `HanWangKaiAnnotated` | Han Wang free-license set | Traditional kai | 14 MB | Alt-kai for comparison |
+| `BpmfHuninn` | ButTaiwan/bpmfvs | Modern round sans (Huninn) | 4.4 MB | UI, screens |
+| `BpmfGenSenRounded` | ButTaiwan/bpmfvs | Rounded | 7.4 MB | Friendly, lower grades |
+| `BpmfGenYoGothic` | ButTaiwan/bpmfvs | Gothic / sans (Source Han Sans) | 5.2 MB | High readability |
+| `BpmfZihiSerif` | ButTaiwan/bpmfvs | Serif / Mincho | 6.5 MB | Print-book style |
+| `BpmfIansui` | ButTaiwan/iansui | Handwriting | 7.1 MB | Casual, friendly |
+| `HanWangMingPolyphonic1` | Han Wang free-license set | Serif with polyphonic readings | 3.3 MB | Teaching multi-pronunciation characters |
 
 The `unicode-range` rule plus `font-display: swap` means each font is only downloaded when actually selected — adding fonts to the dropdown does **not** inflate the initial JS bundle.
 
@@ -584,7 +631,7 @@ License files for each font (`LICENSE-2.0.txt`, `NOTICE.txt`, etc.) are kept alo
 - Choice persisted in `localStorage['rm_bpmf_font']`
 - Default: `BpmfZihiKai` (closest to grade-school textbook style)
 - Sets CSS variable `--bpmf-font-family` on `<html>` — every `.bpmf-font` element updates instantly
-- Option `不用字型（標註注音）` reverts to `<ruby>/<rt>` mode
+- The "no font (ruby annotation)" option reverts to `<ruby>/<rt>` mode
 
 #### Applied to
 
@@ -602,19 +649,19 @@ License files for each font (`LICENSE-2.0.txt`, `NOTICE.txt`, etc.) are kept alo
 When the student **selects (highlights) any Chinese text** anywhere in the app, a 320 px panel slides in on the right showing:
 
 - The matched word (or longest-prefix match / first-char fallback)
-- **All bopomofo readings** — polyphonic characters list every reading (e.g. 「和」shows 5 readings: ㄏㄜˊ / ㄏㄜˋ / ㄏㄢˋ / ㄏㄨˊ / ˙ㄏㄨㄛ)
+- **All bopomofo readings** — polyphonic characters list every reading (e.g. one common conjunction character has 5 readings: ㄏㄜˊ / ㄏㄜˋ / ㄏㄢˋ / ㄏㄨˊ / ˙ㄏㄨㄛ — the bopomofo symbols themselves are not Han characters so they remain)
 - The MOE-style definition, numbered + example phrases
 - Per-character readings when the whole phrase isn't in the dictionary
 
 #### Data source
 
-Ported from [Bpmf_VSIME / ToneOZ 澳聲通字典](https://toneoz.com) — **MIT License**. The original 268-shard tzdata is merged into a single `backend/data/dictionary.json` (43,986 words / 44,710 entries, 7.8 MB).
+Ported from the [ToneOZ](https://toneoz.com) Mandarin dictionary (MIT-licensed). The original 268-shard tzdata is merged into a single `backend/data/dictionary.json` (43,986 words / 44,710 entries, 7.8 MB).
 
 | Layer | Path | Notes |
 |------|------|-------|
 | Importer | `scripts/import_dict.py` | Parses `window.tzdic["N"] = {...}` shards, merges, normalises `<br>` → newlines. Re-run when source dictionary updates. |
 | In-memory cache | `backend/src/services/dictService.ts` | Loaded once on first lookup; ~30 MB heap; O(1) `Map` access. |
-| Backend route | `GET /api/dict/lookup?q=詞` | No auth — public reference data. 50-char cap. |
+| Backend route | `GET /api/dict/lookup?q=<text>` | No auth — public reference data. 50-char cap. |
 | Frontend component | `frontend/src/components/common/ReadingHelper.tsx` | Document-level `selectionchange` + `mouseup` listener, 200 ms debounce, single mount in `App.tsx`. |
 
 #### Lookup strategy
@@ -632,9 +679,119 @@ Ported from [Bpmf_VSIME / ToneOZ 澳聲通字典](https://toneoz.com) — **MIT 
 
 ---
 
+### Reading Tool (Annotate an Article)
+
+A standalone page at `/reading-tool` that takes a pasted article and annotates every character with bopomofo, highlights polyphonic characters, and lets the student pick the correct reading for each one.
+
+#### Layout
+
+```
++--------- char block + char block + ... ---------+    +-------+
+| Han_char + bopomofo column (right side)         |    | Dict  |
+| ... punctuation passes through unchanged ...    |    | panel |
++-------------------------------------------------+    +-------+
+        [◄]  "<char>" readings:  [char + reading 1] [char + reading 2] ...  [►]
+```
+
+#### Behavior
+
+- Type or paste any text → click Start.
+- Each Chinese character renders as a `char-block`: the character with a vertical bopomofo column to the right (and the tone mark in its own right-side track — matching textbook convention).
+- Characters with ≥ 2 readings get a yellow background (polyphonic markers).
+- Click any character → opens the bottom strip with one button per reading (each button shows the same character with each possible bopomofo). Click a reading → marks that occurrence as user-selected (green background).
+- Side panel auto-populates with the dictionary entry for the longest-matching word starting at the click position.
+- Prev/Next arrows (◄ ►) jump to the previous/next polyphonic character in the article.
+
+#### Data sources
+
+- `GET /api/dict/charmap` returns `{ char: [reading1, reading2, ...] }` for all single-character entries in the dictionary (~6,000 chars).
+- `GET /api/dict/polyphonic` returns the subset with ≥ 2 readings (~552 chars).
+- `GET /api/dict/lookup?q=<text>` for per-word dictionary cards.
+
+#### Inspiration & licensing
+
+The concept of an article annotator is widely available. Our implementation is a clean-room rewrite — no code, data, or assets were copied from any third-party tool. The bopomofo dictionary data and Hanzi Writer stroke data are both MIT-licensed sources (Bopomofo Variant Set and Make-Me-A-Hanzi respectively).
+
+---
+
+### Extension Modules (Printable Worksheets & Stroke Practice)
+
+A row of optional tiles on the home page that open extra learning utilities. All clean-room implementations; no copied code or data.
+
+#### Math Practice Generator (`/ext/math`)
+
+- Pure procedural generation of `+`, `−`, `×`, `÷` problems.
+- Configurable: operations (multi-select), preset difficulty (1–10, 1–20, 1–50, 1–100) or custom min–max range, problem count, number of operands (2–4 for chain problems), optional teacher version with answers shown.
+- Subtraction enforces non-negative results; division enforces integer results; multiplication caps the operand range to keep results readable.
+- Print-friendly: a CSS media query hides the setup panel and renders the worksheet with a name/class/date/score header.
+
+#### Tianzige Writing Grid (`/ext/writing-grid`)
+
+- Generates printable Chinese character practice paper.
+- Choose grid type (4-square or 9-square), cells per character (2–15), demo mode (first cell shown / all cells shown for tracing / all blank), and optional faded tracing rows.
+- Characters render in the user's selected bopomofo font (so the bopomofo annotation is already attached).
+- 100% CSS-rendered grid lines; no stroke-data dependency.
+
+#### Print Worksheet (`/ext/worksheet`)
+
+- Backend endpoint: `GET /api/quiz/worksheet?subject=chinese&theory=<theory>&count=<n>`.
+- Pulls a random sample of single-choice questions from the local question bank.
+- Renders a printable worksheet with name/class/date/score header.
+- Student version (blank options) or parent version (correct answer highlighted).
+- All data sourced from our own seeded questions; no external content.
+
+#### Stroke Practice (`/ext/stroke`)
+
+- Type characters → each gets a Hanzi Writer card with playback, trace-quiz, and reset.
+- Powered by [`hanzi-writer`](https://hanziwriter.org/) (MIT) and Make-Me-A-Hanzi stroke data via jsdelivr CDN.
+- Configurable animation speed, stroke width, and outline visibility.
+- Characters without stroke data (rare CJK extensions) show a friendly placeholder.
+
+---
+
+### Student Name & Belonging System
+
+To increase a student's sense of ownership, the app surfaces their display name in three places.
+
+#### Home page
+
+A prominent welcome card at the top of `SubjectSelector` shows the student's name as a large heading. Click the card to switch into an inline edit field (1–12 characters, validated server-side).
+
+#### Quiz HUD
+
+The progress bar in `QuizBoard` reads "Question N / M  ·  {name} keep going!" so the student sees their name on every question.
+
+#### Personalised answer feedback
+
+After each answer, a center-stage card briefly appears:
+- Correct → "{name}, correct!"
+- Wrong → "{name}, try again"
+
+The card animates in with the existing `combo-flash` keyframe and disappears just before the next-question transition takes over.
+
+#### Backend
+
+`PATCH /api/auth/me` accepts `{ display_name }`. Validation: 1–12 chars, only Chinese / Latin alphanumeric / spaces. Stored in the existing `users.display_name` column. `AuthContext` exposes an `updateDisplayName(name)` method that performs the patch and locally reflects the change so the new name appears across all open routes immediately.
+
+---
+
+### Quiz Transition Effects
+
+When a question changes, the transition is no longer a silent snap. Three pieces of feedback fire in sequence so the student visibly knows the question changed:
+
+1. **Dwell** (900 ms normal / 1400 ms SEN) — the answer-button colour stays so the student processes correct/wrong feedback.
+2. **Splash overlay** (700 ms) — a center-stage card animates in with a mushroom emoji and the upcoming question number. The number is snapshotted at splash start to avoid jumping when React re-renders mid-transition.
+3. **Slide-in card** (380 ms) — the new question card mounts with a CSS keyframe that fades in and slides from the right.
+
+Implementation notes:
+- The card animation uses `animation-fill-mode: backwards` so the final `transform` is NOT retained. Retained `transform: translateX(0)` would still create a containing block for fixed-positioned descendants, which would break `@hello-pangea/dnd` for sorting questions (the dragged tile would drift off-axis).
+- The `animate-pop` on `ScoreModal` is similarly scoped to the score-card column only, so the retry panel's sorting questions are never inside a transformed ancestor.
+
+---
+
 ### SEN Mode Design
 
-"SEN" (Special Educational Needs) — referred to **only** as "輕鬆學習模式" in the UI.
+"SEN" (Special Educational Needs) — referred to **only** as "Easy Learning Mode" in the UI (never as SEN or any clinical term).
 
 **Server-side adaptations** (`is_sen_mode = 1`):
 
@@ -653,7 +810,7 @@ Ported from [Bpmf_VSIME / ToneOZ 澳聲通字典](https://toneoz.com) — **MIT 
 - Progress bar text: small → base
 
 **Hard rules**:
-- The strings "遲緩" / "特教" / "障礙" / "special needs" must never appear in any UI surface.
+- Words equivalent to "delayed" / "special education" / "disability" / "special needs" — in any language — must never appear in any UI surface.
 - All SEN code paths are behind a single hook `useSenLayout()` for traceability.
 
 ---
@@ -665,8 +822,13 @@ Subject modules live in `modules/<subject>/module.config.json`.
 ```json
 {
   "subject": "math",
-  "displayName": "數學",
-  "displayNameI18n": { "zh-TW": "數學", "en": "Math", "ja": "算数", "ko": "수학" },
+  "displayName": "Math",
+  "displayNameI18n": {
+    "zh-TW": "<Traditional Chinese name>",
+    "en": "Math",
+    "ja": "<Japanese name>",
+    "ko": "<Korean name>"
+  },
   "icon": "🔢",
   "color": "#3b82f6",
   "theoryTypes": ["cognitive", "input", "usage", "sociocultural"],
@@ -719,7 +881,7 @@ npm run test:child:batch             # 50 quizzes with random personas
 | Spec | Assertion |
 |------|-----------|
 | Login page renders | Visible RedMushroom logo + username input |
-| Login with demo student | Lands on "今天要練習哪個主題？" within 10s |
+| Login with demo student | Lands on the theory-selection screen within 10s |
 | Start quiz flow | Answer button visible after theory click |
 | IDOR: session result without token | Returns 401 |
 | `/api/quiz/start` payload | No `correct_answer` key in any question |
@@ -848,7 +1010,7 @@ npx playwright install chromium
 
 ### License
 
-MIT License — free for use and adaptation in schools worldwide. Trademarks "RedMushroom" / "紅蘑菇" are reserved for the maintainer's hosted SaaS; **forks must rebrand** if commercialised. See `docs/business/open-core-plan.md`.
+MIT License — free for use and adaptation in schools worldwide. The "RedMushroom" name and logo are reserved for the maintainer's hosted SaaS; **forks must rebrand** if commercialised. See `docs/business/open-core-plan.md`.
 
 ---
 ---
@@ -868,13 +1030,18 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 9. [題目生成系統](#題目生成系統)
 10. [分數與獎勵系統](#分數與獎勵系統)
 11. [打字遊戲](#打字遊戲)
-12. [注音字型系統](#注音字型系統)
-13. [選字讀音助手](#選字讀音助手)
-14. [SEN 模式設計](#sen-模式設計)
-15. [多科目模組](#多科目模組)
-16. [測試](#測試)
-17. [安全設計](#安全設計)
-18. [開發流程](#開發流程)
+12. [語詞快打（蘑菇對恐龍）](#語詞快打蘑菇對恐龍)
+13. [注音字型系統](#注音字型系統)
+14. [選字讀音助手](#選字讀音助手)
+15. [讀音工具（貼文章標注音）](#讀音工具貼文章標注音)
+16. [擴充模組（學習單列印＋筆順練習）](#擴充模組學習單列印筆順練習)
+17. [學生姓名與歸屬感系統](#學生姓名與歸屬感系統)
+18. [題目切換轉場](#題目切換轉場)
+19. [SEN 模式設計](#sen-模式設計)
+20. [多科目模組](#多科目模組)
+21. [測試](#測試)
+22. [安全設計](#安全設計)
+23. [開發流程](#開發流程)
 19. [疑難排解](#疑難排解)
 20. [授權](#授權)
 
@@ -886,7 +1053,7 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 - 🧠 **四大學習主題**：語詞認知、語言輸入、語言運用、社文語境，單一主題練習。
 - 🎯 **綜合練習**：每場 10 題從 4 個主題各取 2-3 題，跨全 8 個類別。最多元的練習。
 - ✂️ **排句子**：10 題拖曳排序題，全類別覆蓋（`question_type = 'sorting'`）。瓦片隨機初始順序，必須拖曳。
-- 📚 **約 1000+ 國語文題目 + 32 道數學題目**：32 模板矩陣（4 主題 × 8 類別 × 多句型）+ 57 道臺灣在地化 + 32 道臺灣情境數學題。
+- 📚 **約 1,920+ 國語文題目 + 32 道數學題目**：32 模板矩陣（4 主題 × 8 類別 × 多句型）+ 57 道臺灣在地化 + 32 道臺灣情境數學題 + 85 道補充題（量詞、反義詞、同義詞、季節、動物、時間、句型）。
 
 #### 防重複／品質
 - 🎲 **分層抽題 + 6 小時不重複**：8 個類別輪流抽；6 小時內看過或答過的題目都會被排除。
@@ -894,25 +1061,21 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 - 🔀 **答案位置打亂**：每題正解在 1/2/3/4 隨機分布（約各 25%）。
 - 🔄 **拖曳瓦片打亂**：排序題瓦片初始順序為隨機，不是答案順序。
 - 🎨 **多種題目句型**：每個認知模板 4 種句子變體輪換，排序題 3 種。
+- 🧹 **爭議題目審查**：找出 3 個語序歧義的 sorting 模板（例如「媽媽睡在客廳」與「媽媽在客廳睡」皆通），改寫為強制單一順序的結構；DB 內 196 道既有爭議題目已刪除。
 
-#### 打字遊戲（注音打字）
+#### 打字遊戲
 - 🎮 **單字落下打字遊戲**：100 關難度遞增。
-- 🔵 **1–10 關**：正方向、慢速。
-- ⬇️ **11–50 關**：正方向、慢 × 1.2。
-- 🌀 **51–100 關**：旋轉、慢 × 1.3。
-- 🎯 **每關目標**：1–6 關 5/6/.../10，之後 = 關卡數（第 50 關 = 50 字）。
-- 💚 **IME 相容**：使用 `compositionupdate` + `compositionend`，中文輸入法 ON 也能玩，**不需要關閉**。
-- ✏️ **注音即時顯示**：IME 組字時注音動態顯示在底部欄。
-- 🍄 **3 條紅蘑菇命**；單字落地扣一條。
-- 🎯 **連擊系統**：連續打對 1 個以上每次 +5 EXP。
+- 🍄 **語詞快打（蘑菇對恐龍）**：類植物大戰殭屍——左邊蘑菇、右邊恐龍逼近，輸入畫面上的詞 + Enter → 蘑菇發射種子打中詞，同時把恐龍推回去。100 關 × 每關 2 分鐘。詞庫為從本機 MIT 授權字典過濾出來的 1,000 個常用 2 字詞。
+- 💚 **IME 相容**：使用 `compositionupdate` + `compositionend`，中文輸入法 ON 也能玩。
+- ✏️ **注音即時顯示**：IME 組字時注音動態顯示在輸入框。
 
 #### 分數系統（雙幣設計）
-- 📊 **經驗值 EXP**（`total_exp`）：從測驗與打字遊戲累積，永不減少，等級用此。
+- 📊 **經驗值 EXP**（`total_exp`）：從測驗與遊戲累積，永不減少，等級用此。
 - 🎁 **兌換獎品分數 reward_points**：獨立的可消費貨幣，與 EXP 同速率累積。預留給未來商店扣減（不影響 EXP）。
 - 🆙 **等級門檻翻倍**：Lv1→2 = 5,000，Lv2→3 = 10,000，Lv3→4 = 20,000 ...（`5000 × 2^(lv-1)`）。
-- 💯 **1:1 分數換 EXP**：得 80 分 → +80 EXP；通過再 +10 獎勵；打字遊戲每字 1 EXP。
+- 💯 **1:1 分數換 EXP**：得 80 分 → +80 EXP；通過再 +10 獎勵；打字遊戲每字 1 EXP，語詞快打每詞 `5 + 字數×2` EXP。
 - 🏠 **主畫面分數卡**：等級、進度條、總 EXP、兌換分數、連勝火焰，每場結束後自動刷新。
-- ❌ **中途離開 = 沒分數**（統一的 `← 離開` 按鈕會丟棄進行中的 session）。
+- ❌ **中途離開 = 沒分數**（統一的返回按鈕會丟棄進行中的 session）。
 
 #### 其他玩法
 - 🐲 **錯題怪獸**：SM-2-lite 間隔重複（**1h**／24h／72h／168h／336h；連續答對 3 次「淨化」）。剛抓到的怪獸 1 小時內出現，用 **🟢 現在可複習** vs **⏳ 等待 N 分鐘** 區分。
@@ -922,10 +1085,27 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 - 📊 **六維度雷達**：準確率、穩定性、廣泛性、認知、耐力、流暢。
 - 🔁 **錯題在線再挑戰**：測驗結束後，錯題右邊有「試試」按鈕，旁邊面板答題不計分。支援單選與排序題。
 
+#### 讀音與字典工具
+- 📖 **選字讀音助手**：任何頁面選取中文字，右上自動浮出側邊面板，顯示**全部讀音**（破音字會列出全部）＋ 字典釋義。背後是 44,000 詞的 MIT 授權字典常駐記憶體。
+- 📖 **讀音工具**：貼上任意文章 → 按開始，每個漢字自動標注音；破音字黃色高亮，點擊可從底部列出的各讀音中選擇。
+- 🖋 **筆順練習**：輸入任意漢字，每字一張 Hanzi Writer 卡片，可播放筆順動畫、自己描寫練習、重來。引擎為 `hanzi-writer`（MIT）＋ Make-Me-A-Hanzi 筆畫資料（CDN）。
+
+#### 擴充模組（可列印學習單）
+- 📝 **數學練習產生器**：純程序化生成 +／−／×／÷ 題目，可設定難度範圍、題數、連算（2-4 元）。列印時自動隱藏設定區。
+- ✍️ **田字格習字紙**：純 CSS 繪製田／米字格，可選示範模式（首格示範／全描紅／全空白）＋ 淡色臨摹列。
+- 📋 **練習單列印**：從本機題庫抽題，產出可列印的學習單，學生版／家長版（顯示答案）切換。
+- 🖋 **筆順練習**：見上方「讀音與字典工具」。
+
 #### 無障礙與 UI
 - 🌟 **SEN 友善模式**：「輕鬆學習模式」——5 題、大字、單欄、1.8 秒防誤觸、50+ 專屬讚美、吉祥物自動隱藏。**絕不出現臨床術語。**
-- ✍️ **注音字型系統**：4 種注音字型（粉圓 Huninn / 芫荽 Iansui / 字嗨楷體 / 源樣黑體）＋傳統 `<ruby>/<rt>` 模式。使用者可選，存 `localStorage`。預設 **字嗨楷體**（最像課本字型）。
-- ← **統一返回按鈕**：每個頁面／遊戲都有一致的 `← 返回`（遊戲中 `← 離開`）。
+- ✍️ **注音字型系統**：8 種注音字型（粉圓 / 芫荽 / 字嗨楷體 / 源樣黑體 / 源泉圓體 / 字嗨明體 / 王漢宗中楷體 / 王漢宗中明體破音字）＋傳統 `<ruby>/<rt>` 模式。使用者可選，存 `localStorage`。預設 **字嗨楷體**（最像課本字型）。
+- 🎴 **直排注音版面**：可重用的 `BopomofoColumn` 元件——聲符／介符／韻符直排，聲調符號在右側獨立欄，符合台灣教科書排版。讀音助手、讀音工具、字典面板、語詞快打都使用此元件。
+- ✨ **題目切換轉場**：題與題之間有「第 N 題」splash 卡片彈出，新題從右滑入。讓學生明確知道題目換了。
+- ← **統一返回按鈕**：每個頁面／遊戲都有一致的返回按鈕。
+
+#### 學生姓名與歸屬感系統
+- 👋 **首頁可編輯中文姓名**：黃色歡迎卡顯示學生姓名（大字），點擊內嵌編輯（1-12 字，後端驗證）。
+- 💬 **個人化答題反饋**：測驗 HUD 顯示「第 N 題 ／ {姓名} 加油！」；答題後彈出「{姓名}，答對了！」或「{姓名}，再想想看」，到處看到自己的名字以增強歸屬感。
 
 #### 內容與社群
 - 💬 **555 條讚美庫**：503 一般 + 52 SEN 專屬；最近 20 條被排除。
@@ -933,7 +1113,7 @@ MIT License — free for use and adaptation in schools worldwide. Trademarks "Re
 - 👩‍🏫 **老師管理台**：班級總覽、PDF、CSV。
 - 🌐 **多語言介面**：繁中／英／日／韓。
 - 🐹 **AI 兒童測試員**：4 種 persona 的 Playwright 模擬器做 UX 壓測。
-- 📦 **前端 code-split**：初始 JS bundle 170KB（gzip 55KB）。
+- 📦 **前端 code-split**：初始 JS bundle 170KB（gzip 55KB）；7.8 MB 字典與 1,000 詞庫只在對應功能打開時惰性下載。
 
 ---
 
@@ -1340,6 +1520,54 @@ Lv4 → 5：40,000
 
 ---
 
+### 語詞快打（蘑菇對恐龍）
+
+打字遊戲的進階版，把單字換成 2 字詞，並引入 PvZ 風格的「蘑菇 vs 恐龍」對抗。
+
+#### 版面
+
+- 🍄 蘑菇固定在最左邊（玩家）
+- 🦖 恐龍從右側 88% 起跑，慢慢往左推進；CSS keyframe 上下彈跳模擬奔跑
+- 詞語從右邊飄出來、往左飛
+- 底部輸入欄：打詞語 + Enter 發射
+
+#### 機制
+
+- 100 關 × 每關 2 分鐘
+- 畫面同時詞數：`min(8, 關卡 × 2)`——Lv 1 = 2、Lv 3 = 6、Lv 5+ = 8。被消除立刻補一個維持滿屏
+- 過關條件：在時限內清掉 `min(40, 關卡 × 2)` 個詞，且恐龍未追到
+- 恐龍速度：`0.8 + (Lv-1) × 0.04` %/秒（Lv 1 約 100 秒走完、Lv 100 約 17 秒）
+- 詞速度：`1.0 + (Lv-1) × 0.04` %/秒
+- 答對 → 蘑菇射種子 → 命中詞消失、恐龍被推回 `3 + 詞長度` %
+- 3 條紅蘑菇命；詞碰到玩家扣一條
+- 失敗條件：HP=0 或 恐龍追到玩家（≤10%）或 時間到
+
+#### 輸入行為
+
+- **只有 Enter 才判定**——避免組字中途誤判（部分前綴比對只是視覺提示）
+- 答對 → 發射種子＋清除輸入
+- 答錯 → 輸入框紅色 shake 抖動，保留輸入讓玩家修改
+- 關卡 overlay 上 Enter = 進下一關／重試／開始；Esc = 回首頁
+- `phase === 'playing'` 時自動 focus input
+
+#### 視覺反饋
+
+- **部分比對高亮**：使用者輸入時，符合前綴的詞會黃色放大環標示、其他詞變淡
+- **+EXP 浮動氣泡**：打中時從詞的位置往上飄
+- **連擊 flash**：連擊 ≥3 時，畫面中央大字「COMBO ×N 🔥」
+- **危險區紅色脈動**：恐龍 <28% 時，整個遊戲區紅色脈動
+- **越近越大**：恐龍 `font-size` 隨距離縮放（3rem 遠 → 5rem 近）製造壓迫感
+
+#### 詞庫
+
+1,000 個常用 2 字詞，由 `python3 scripts/build_word_vocab.py` 從本機 `backend/data/dictionary.json`（MIT 授權）過濾產出。條件：2 字漢字詞 × 兩字都出現在字典 ≥8 次（字頻自動鎖定常用字）× 主讀音為 2 音節。輸出 `frontend/public/data/common-words.json`（48 KB）。
+
+#### 分數寫入
+
+每打中一個詞：`POST /api/quiz/game-score { exp: 5 + 詞長×2, reward: exp/2, source: 'word-typing-lv${level}' }`。通關獎勵：`10 + Lv × 2` EXP。
+
+---
+
 ### 注音字型系統
 
 #### 兩種模式
@@ -1442,6 +1670,116 @@ Lv4 → 5：40,000
 - 觸發：選取**含中文**的字串，長度 ≤ 40，且不在 `<input>`／`<textarea>`／contenteditable 內
 - 在面板**裡面**的選取會被忽略（複製釋義不會重新查詢）
 - × 關閉按鈕只在下次選字才會再出現
+
+---
+
+### 讀音工具（貼文章標注音）
+
+獨立頁面 `/reading-tool`——貼上整篇文章 → 每個漢字自動標注音、破音字高亮、可逐字選讀音。
+
+#### 版面
+
+```
++---- char block + char block + ... ----+   +-------+
+| 漢字 + 注音直排（右側）              |   | 字典  |
+| ...標點原樣保留...                   |   | 面板  |
++--------------------------------------+   +-------+
+       [◄]  「字」的讀音：[字+讀音1] [字+讀音2] ...  [►]
+```
+
+#### 行為
+
+- 貼入文字 → 按「開始」
+- 每個漢字渲染成 `char-block`：漢字 + 右側直排注音欄（聲調符號在獨立右欄，符合台灣教科書）
+- 有 ≥2 種讀音的字（多音字）黃色底
+- 點任意字 → 底部欄列出所有讀音；點擊讀音 → 該位置標記為「已選擇」（綠色）
+- 右側字典面板自動顯示點擊位置最長匹配詞的釋義
+- ◄ ► 跳到上／下一個多音字（略過普通字）
+
+#### 資料來源
+
+- `GET /api/dict/charmap` → `{ 字: [讀音1, 讀音2, ...] }` 全部單字（約 6,000 字）
+- `GET /api/dict/polyphonic` → ≥2 讀音的字（約 552 字）
+- `GET /api/dict/lookup?q=<text>` → 詞條釋義
+
+#### 概念與授權
+
+「整篇文章標注音」概念是公共教學工具，本實作為**乾淨重寫**——無任何程式碼、資料、素材複製自第三方工具。注音字典資料與 Hanzi Writer 筆畫資料均為 MIT 授權開源來源（Bopomofo Variant Set 與 Make-Me-A-Hanzi）。
+
+---
+
+### 擴充模組（學習單列印＋筆順練習）
+
+首頁底部一排可選磚塊，提供進階輔助學習工具。全部為**從零實作**——無任何程式碼或資料複製。
+
+#### 數學練習產生器（`/ext/math`）
+
+- 純程序化生成 `+`／`−`／`×`／`÷` 題目
+- 可設定：運算類型（多選）、難度（1-10／1-20／1-50／1-100 預設或自訂範圍）、題數、運算元個數（2-4 連算）、家長版顯示答案
+- 減法強制非負；除法強制整除；乘法自動降低範圍以免結果過大
+- 列印友善：CSS media query 隱藏設定區，列印時自動加上姓名／班級／日期／得分欄
+
+#### 田字格習字紙（`/ext/writing-grid`）
+
+- 生成可列印的習字紙
+- 可選格類型（田字格／米字格）、每字格數（2-15）、示範模式（首格示範／全描紅／全空白）、淡色臨摹列
+- 漢字用使用者選的注音字型渲染（自動帶注音標註）
+- 100% CSS 繪製方格線；無筆畫資料依賴
+
+#### 練習單列印（`/ext/worksheet`）
+
+- 後端 API：`GET /api/quiz/worksheet?subject=chinese&theory=<theory>&count=<n>`
+- 從本機題庫隨機抽單選題
+- 渲染為可列印的學習單，含姓名／班級／日期／得分欄
+- 學生版（選項空白）／家長版（答案標示）切換
+- 所有資料來自本地 seeded 題庫，無外部內容
+
+#### 筆順練習（`/ext/stroke`）
+
+- 輸入任意漢字 → 每字一張 Hanzi Writer 卡片，可播放筆順動畫、自己描寫練習、重來
+- 引擎：[`hanzi-writer`](https://hanziwriter.org/)（MIT）+ Make-Me-A-Hanzi 筆畫資料（jsdelivr CDN）
+- 可調動畫速度、筆畫粗細、外框顯示
+- 缺字（罕用 CJK 擴展字）顯示友善的提示
+
+---
+
+### 學生姓名與歸屬感系統
+
+為了讓學生對系統產生認同感，姓名在三個位置顯示。
+
+#### 首頁
+
+`SubjectSelector` 頂部一張顯眼的歡迎卡，顯示學生中文姓名（大字）。點擊卡片進入內嵌編輯（1-12 字，後端驗證）。
+
+#### 測驗 HUD
+
+`QuizBoard` 進度條讀作「第 N 題 / 共 M 題　·　{姓名} 加油！」——每題都看到自己的名字。
+
+#### 個人化答題反饋
+
+每答完一題，畫面中央彈出卡片：
+- 答對 → 「{姓名}，答對了！」
+- 答錯 → 「{姓名}，再想想看」
+
+卡片用既有的 `combo-flash` keyframe 動畫進場，並在下一題轉場接手前自動消失。
+
+#### 後端
+
+`PATCH /api/auth/me` 接收 `{ display_name }`。驗證：1–12 字，只允許中文／英文／數字／空白。儲存到既有的 `users.display_name` 欄位。`AuthContext` 提供 `updateDisplayName(name)` 方法，呼叫後立即本地 reflect，所有開啟的路由瞬間看到新名字。
+
+---
+
+### 題目切換轉場
+
+題目換題時不再是無聲的瞬間切換。三段反饋依序播放，讓學生明確看到題目換了：
+
+1. **Dwell**（一般 900ms ／ SEN 1400ms）—— 答案按鈕顏色保留，學生看清楚對／錯反饋
+2. **Splash overlay**（700ms）—— 畫面中央彈出一張卡片，含 🍄 emoji 與下一題編號。編號在 splash 開始時 snapshot，避免 React 重新渲染時跳號（避免「第 2 題」中途變成「第 3 題」）
+3. **Slide-in 題卡**（380ms）—— 新題卡用 CSS keyframe 從右側淡入滑進
+
+實作細節：
+- 題卡動畫用 `animation-fill-mode: backwards`，動畫結束後 `transform` **不**保留。保留 `transform: translateX(0)` 仍會建立 transform containing block，導致 `@hello-pangea/dnd` 拖曳排序題瓦片時用 fixed 定位算錯座標而飄走
+- `ScoreModal` 的 `animate-pop` 改套到「左欄分數區」單獨一層，retry 面板的 `SortingDisplay` 永遠不在 transform 祖先下
 
 ---
 

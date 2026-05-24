@@ -107,12 +107,15 @@ export default function TypingGame() {
   const wordsRef = useRef(FALLBACK_WORDS);
 
   // React state for rendering
-  const [renderKey, setRenderKey] = useState(0);
+  // Only the setter is read — incrementing forces a re-render of the
+  // canvas overlay when the imperative game state (chars[]) mutates.
+  const [, setRenderKey] = useState(0);
   const [uiLives, setUiLives] = useState(MAX_LIVES);
   const [uiScore, setUiScore] = useState(0);
   const [uiLevel, setUiLevel] = useState(1);
   const [uiCleared, setUiCleared] = useState(0);
-  const [uiTarget, setUiTarget] = useState(levelConfig(1).target);
+  // setter only — actual target read from `cfg.target` (derived from uiLevel) in render
+  const [, setUiTarget] = useState(levelConfig(1).target);
   const [display, setDisplay] = useState('');
   const [shotTarget, setShotTarget] = useState<{ x: number; y: number } | null>(null);
   const [wrongFlash, setWrongFlash] = useState(false);

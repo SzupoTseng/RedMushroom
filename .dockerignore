@@ -1,0 +1,63 @@
+# RedMushroom — files excluded from the Docker build context.
+# Smaller context = faster builds.
+
+# Node.js
+**/node_modules
+**/npm-debug.log
+
+# Build outputs (regenerated inside Dockerfile)
+**/dist
+**/build
+**/.vite
+
+# Local DB (re-seeded in the container's persistent volume)
+database/*.db
+database/*.db-wal
+database/*.db-shm
+database/.db-version
+database/.seeded
+
+# Dev tooling that doesn't belong in the image
+.git
+.gitignore
+.github
+.vscode
+.idea
+.claude
+*.log
+.DS_Store
+Thumbs.db
+
+# Local-only scripts (Windows / WSL helpers)
+*.bat
+*.command
+start.bat
+start.command
+Run.bat
+reinstall.bat
+scripts/python_setup.py
+scripts/check-db-fresh.js
+
+# Tests + e2e artifacts (not needed in prod image)
+tests
+test-results
+playwright-report
+playwright.config.ts
+
+# Docs & business material
+docs
+PLAN.MD
+AGENTS.md
+CONTRIBUTING.md
+README.md
+
+# Env files — set via Railway dashboard instead
+.env
+.env.local
+.env.*.local
+
+# Source font directory (only the bundled ones under frontend/public/fonts ship)
+fonts
+
+# Old / alternative docker-compose configs
+docker-compose*.yml

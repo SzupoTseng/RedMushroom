@@ -28,7 +28,7 @@ interface Props {
 
 export default function ScoreModal({
   totalScore, isPassed, expGained, praise,
-  levelUp, newLevel, questions, results, answers, details = [], onRetry,
+  levelUp, newLevel, questions, results, details = [], onRetry,
 }: Props) {
   const correct = Object.values(results).filter(Boolean).length;
   const [retryId, setRetryId] = useState<number | null>(null);
