@@ -13,9 +13,12 @@
 #   /app/scripts/                seed + init scripts (run on first boot)
 
 # ── Stage 1: frontend build ──
-# Railway trial build workers have limited memory; cap Node heap and skip
-# lifecycle scripts (frontend has no native postinstall deps) to keep the
-# install footprint low.
+# DO NOT pass --no-optional or --omit=optional here: Rollup v4 ships its
+# Linux x64 native binding as @rollup/rollup-linux-x64-gnu in its
+# optionalDependencies. Without it, `vite build` crashes with
+# MODULE_NOT_FOUND at runtime. See npm/cli#4828.
+# --ignore-scripts is still safe (none of the frontend deps have native
+# postinstall hooks that vite needs).
 FROM node:20-bookworm AS frontend-build
 ENV NODE_OPTIONS=--max-old-space-size=1024
 ENV NPM_CONFIG_AUDIT=false
@@ -23,9 +26,7 @@ ENV NPM_CONFIG_FUND=false
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-# --ignore-scripts: frontend has no native deps needing postinstall hooks.
-# --no-optional: skip optionalDependencies (saves ~100 MB on common stacks).
-RUN npm ci --ignore-scripts --no-optional --prefer-offline
+RUN npm ci --ignore-scripts --prefer-offline
 COPY frontend/ ./
 RUN npm run build
 
