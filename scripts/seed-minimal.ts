@@ -134,32 +134,46 @@ const teacherExists = db
   .prepare("SELECT user_id FROM users WHERE username = 'teacher'")
   .get();
 
-if (!teacherExists) {
-  const hash = bcrypt.hashSync('teacher123', 12);
-  const result = db.prepare(`
-    INSERT INTO users (username, password_hash, display_name, role, grade, class_id)
-    VALUES ('teacher', ?, '示範老師', 'teacher', '0', 'class-A')
-  `).run(hash);
-  db.prepare('INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)').run(result.lastInsertRowid);
-  db.prepare('INSERT OR IGNORE INTO user_sprites (user_id) VALUES (?)').run(result.lastInsertRowid);
-  console.log('[seed-minimal] ✅ 建立示範老師帳號 (teacher / teacher123)');
-}
+// Production safety: when SEED_DEMO_ACCOUNTS=false, skip these. In a public
+// deployment you'd usually pre-create real teacher/student accounts and want
+// no well-known credentials. Both passwords can be overridden via env so the
+// public repo never ships the actual production credentials.
+const SEED_DEMO_ACCOUNTS = (process.env.SEED_DEMO_ACCOUNTS ?? 'true').toLowerCase() !== 'false';
+const TEACHER_PASS = process.env.DEMO_TEACHER_PASS ?? 'teacher123';
+const STUDENT_PASS = process.env.DEMO_STUDENT_PASS ?? 'student123';
 
-// ── 預設學生帳號 ──────────────────────────────────────────────────────────────
+if (!SEED_DEMO_ACCOUNTS) {
+  console.log('[seed-minimal] SEED_DEMO_ACCOUNTS=false — skipping demo teacher/student.');
+} else {
+  if (!teacherExists) {
+    const hash = bcrypt.hashSync(TEACHER_PASS, 12);
+    const result = db.prepare(`
+      INSERT INTO users (username, password_hash, display_name, role, grade, class_id)
+      VALUES ('teacher', ?, '示範老師', 'teacher', '0', 'class-A')
+    `).run(hash);
+    db.prepare('INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)').run(result.lastInsertRowid);
+    db.prepare('INSERT OR IGNORE INTO user_sprites (user_id) VALUES (?)').run(result.lastInsertRowid);
+    const masked = TEACHER_PASS === 'teacher123' ? '(default — change DEMO_TEACHER_PASS!)' : '(from env)';
+    console.log(`[seed-minimal] ✅ teacher account created ${masked}`);
+  }
 
-const studentExists = db
-  .prepare("SELECT user_id FROM users WHERE username = 'student1'")
-  .get();
+  // ── 預設學生帳號 ──────────────────────────────────────────────────────────────
 
-if (!studentExists) {
-  const hash = bcrypt.hashSync('student123', 12);
-  const result = db.prepare(`
-    INSERT INTO users (username, password_hash, display_name, role, grade, class_id)
-    VALUES ('student1', ?, '小蘑菇', 'student', '3', 'class-A')
-  `).run(hash);
-  db.prepare('INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)').run(result.lastInsertRowid);
-  db.prepare('INSERT OR IGNORE INTO user_sprites (user_id) VALUES (?)').run(result.lastInsertRowid);
-  console.log('[seed-minimal] ✅ 建立示範學生帳號 (student1 / student123)');
+  const studentExists = db
+    .prepare("SELECT user_id FROM users WHERE username = 'student1'")
+    .get();
+
+  if (!studentExists) {
+    const hash = bcrypt.hashSync(STUDENT_PASS, 12);
+    const result = db.prepare(`
+      INSERT INTO users (username, password_hash, display_name, role, grade, class_id)
+      VALUES ('student1', ?, '小蘑菇', 'student', '3', 'class-A')
+    `).run(hash);
+    db.prepare('INSERT OR IGNORE INTO user_stats (user_id) VALUES (?)').run(result.lastInsertRowid);
+    db.prepare('INSERT OR IGNORE INTO user_sprites (user_id) VALUES (?)').run(result.lastInsertRowid);
+    const masked = STUDENT_PASS === 'student123' ? '(default — change DEMO_STUDENT_PASS!)' : '(from env)';
+    console.log(`[seed-minimal] ✅ student1 account created ${masked}`);
+  }
 }
 
 db.close();
