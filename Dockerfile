@@ -30,20 +30,31 @@ COPY frontend/ ./
 RUN npm run build
 
 # ── Stage 2: backend build (TypeScript → JS) ──
+# Backend has heavier deps (better-sqlite3, bcrypt native, vitest, etc).
+# Same memory-conservative flags as frontend, plus --maxsockets=1 to
+# serialise tarball extraction (reduces parallel-extract memory peak).
 FROM node:20-bookworm AS backend-build
-ENV NODE_OPTIONS=--max-old-space-size=1024
+ENV NODE_OPTIONS=--max-old-space-size=768
+ENV NPM_CONFIG_AUDIT=false
+ENV NPM_CONFIG_FUND=false
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NPM_CONFIG_MAXSOCKETS=1
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --no-audit --no-fund --prefer-offline
+RUN npm ci --no-optional --prefer-offline
 COPY backend/ ./
 RUN npm run build
 
 # ── Stage 3: scripts deps (better-sqlite3 + tsx for entrypoint seeding) ──
 FROM node:20-bookworm AS scripts-build
-ENV NODE_OPTIONS=--max-old-space-size=1024
+ENV NODE_OPTIONS=--max-old-space-size=768
+ENV NPM_CONFIG_AUDIT=false
+ENV NPM_CONFIG_FUND=false
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NPM_CONFIG_MAXSOCKETS=1
 WORKDIR /app/scripts
 COPY scripts/package*.json ./
-RUN npm ci --no-audit --no-fund --prefer-offline
+RUN npm ci --no-optional --prefer-offline
 
 # ── Stage 4: runtime ──
 FROM node:20-bookworm-slim AS runtime
