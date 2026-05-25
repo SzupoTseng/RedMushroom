@@ -13,26 +13,37 @@
 #   /app/scripts/                seed + init scripts (run on first boot)
 
 # ── Stage 1: frontend build ──
+# Railway trial build workers have limited memory; cap Node heap and skip
+# lifecycle scripts (frontend has no native postinstall deps) to keep the
+# install footprint low.
 FROM node:20-bookworm AS frontend-build
+ENV NODE_OPTIONS=--max-old-space-size=1024
+ENV NPM_CONFIG_AUDIT=false
+ENV NPM_CONFIG_FUND=false
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+# --ignore-scripts: frontend has no native deps needing postinstall hooks.
+# --no-optional: skip optionalDependencies (saves ~100 MB on common stacks).
+RUN npm ci --ignore-scripts --no-optional --prefer-offline
 COPY frontend/ ./
 RUN npm run build
 
 # ── Stage 2: backend build (TypeScript → JS) ──
 FROM node:20-bookworm AS backend-build
+ENV NODE_OPTIONS=--max-old-space-size=1024
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund --prefer-offline
 COPY backend/ ./
 RUN npm run build
 
 # ── Stage 3: scripts deps (better-sqlite3 + tsx for entrypoint seeding) ──
 FROM node:20-bookworm AS scripts-build
+ENV NODE_OPTIONS=--max-old-space-size=1024
 WORKDIR /app/scripts
 COPY scripts/package*.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund --prefer-offline
 
 # ── Stage 4: runtime ──
 FROM node:20-bookworm-slim AS runtime
