@@ -1,5 +1,24 @@
-// Minimal Zhuyin (注音) lookup. Chars not present produce empty pinyin
-// (acceptable per existing seed-minimal.ts convention).
+// Zhuyin (注音) conversion with context-aware 破音字 (polyphonic) handling.
+//
+// Strategy (highest priority first):
+//   1. Longest-prefix WORD match against the ToneOZ dictionary
+//      (backend/data/dictionary.json). Multi-character entries carry the
+//      CORRECT contextual reading, e.g. 長大→ㄓㄤˇ ㄉㄚˋ, 音樂→ㄧㄣ ㄩㄝˋ,
+//      重複→ㄔㄨㄥˊ ㄈㄨˋ. This is what fixes polyphonic characters.
+//   2. Curated single-char TABLE below (curriculum-tuned default for the
+//      grade 3–4 vocabulary) — used only when no multi-char word covers it.
+//   3. Dictionary single-char default reading.
+//   4. Empty string (unknown char / punctuation).
+//
+// The dictionary is loaded lazily & cached. If it can't be read, the module
+// degrades gracefully to the single-char TABLE (original behaviour).
+
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const DICT_PATH = path.resolve(HERE, '../../backend/data/dictionary.json');
 
 const TABLE: Record<string, string> = {
   // 人稱
@@ -136,6 +155,75 @@ export interface ZhuyinChar {
   pinyin: string;
 }
 
+// ── ToneOZ dictionary (lazy, cached) ──────────────────────────────────────
+interface DictEntry { zhuyin: string; definition: string }
+let dictCache: Record<string, DictEntry[]> | null = null;
+
+function loadDict(): Record<string, DictEntry[]> {
+  if (dictCache) return dictCache;
+  try {
+    dictCache = JSON.parse(fs.readFileSync(DICT_PATH, 'utf-8'));
+    // eslint-disable-next-line no-console
+    console.log(`[zhuyin] dictionary loaded: ${Object.keys(dictCache!).length.toLocaleString()} entries`);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`[zhuyin] dictionary unavailable (${(e as Error).message}); using single-char table only.`);
+    dictCache = {};
+  }
+  return dictCache!;
+}
+
+// Strip "（變）..." / "(變)..." tone-sandhi notes and collapse whitespace.
+// e.g. "ㄧ ㄏㄤˊ （變）ㄧˋ ㄏㄤˊ" → "ㄧ ㄏㄤˊ"
+function cleanReading(z: string): string {
+  return z.replace(/[（(]變[）)][\s\S]*$/u, '').replace(/\s+/g, ' ').trim();
+}
+
+const RE_CJK = /[㐀-鿿]/; // only segment Han characters
+const MAX_WORD_LEN = 6;            // longest dictionary phrase to probe
+
+/**
+ * Convert a sentence to ZhuyinChar[] with context-aware polyphonic readings.
+ * Walks left→right; at each position takes the longest dictionary word whose
+ * space-separated reading splits cleanly (one syllable per character).
+ */
 export function zhuyinize(text: string): ZhuyinChar[] {
-  return [...text].map((c) => ({ char: c, pinyin: TABLE[c] ?? '' }));
+  const dict = loadDict();
+  const chars = [...text]; // surrogate-safe
+  const out: ZhuyinChar[] = [];
+  let i = 0;
+
+  while (i < chars.length) {
+    // 1. Longest multi-char word match (context-correct for 破音字)
+    let matched = false;
+    if (RE_CJK.test(chars[i])) {
+      const maxLen = Math.min(MAX_WORD_LEN, chars.length - i);
+      for (let len = maxLen; len >= 2; len--) {
+        const word = chars.slice(i, i + len).join('');
+        const entry = dict[word]?.[0];
+        if (!entry) continue;
+        const sylls = cleanReading(entry.zhuyin).split(' ').filter(Boolean);
+        if (sylls.length !== len) continue; // can't map 1:1 — skip this candidate
+        for (let k = 0; k < len; k++) {
+          out.push({ char: chars[i + k], pinyin: sylls[k] });
+        }
+        i += len;
+        matched = true;
+        break;
+      }
+    }
+    if (matched) continue;
+
+    // 2/3/4. Single char: curated TABLE → dict default → empty
+    const c = chars[i];
+    let pinyin = TABLE[c];
+    if (pinyin === undefined) {
+      const de = dict[c]?.[0];
+      pinyin = de ? cleanReading(de.zhuyin).split(' ')[0] : '';
+    }
+    out.push({ char: c, pinyin });
+    i += 1;
+  }
+
+  return out;
 }
