@@ -29,6 +29,25 @@ function RubyChar({ c }: { c: ZhuyinChar }) {
   );
 }
 
+/**
+ * 渲染答案選項標籤：有逐字注音資料 (options_zhuyin) → 走 ZhuyinText（破音字
+ * 會以 ruby 顯示正確讀音）；沒有資料 → 退回字型渲染（向後相容）。
+ */
+export function BpmfLabel({
+  text,
+  zhuyin,
+  className = '',
+}: {
+  text: string;
+  zhuyin?: ZhuyinChar[];
+  className?: string;
+}) {
+  if (zhuyin && zhuyin.length > 0) {
+    return <ZhuyinText content={zhuyin} className={className} />;
+  }
+  return <span className={`bpmf-font ${className}`}>{text}</span>;
+}
+
 export default function ZhuyinText({ content, className = '' }: Props) {
   const { showZhuyin, bpmfFont } = useConfig();
   const polyphonic = usePolyphonicSet();

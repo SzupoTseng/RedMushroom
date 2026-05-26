@@ -13,7 +13,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { zhuyinize } from './questions/zhuyin';
+import { zhuyinize, optionsZhuyin } from './questions/zhuyin';
 import { shuffleSingleChoice } from './questions/shuffle';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -343,8 +343,8 @@ function main() {
   const insertStmt = db.prepare(
     `INSERT INTO questions
        (subject, theory_type, category_type, question_type,
-        content, options, correct_answer, explanation)
-     VALUES ('chinese', ?, ?, ?, ?, ?, ?, ?)`,
+        content, options, options_zhuyin, correct_answer, explanation)
+     VALUES ('chinese', ?, ?, ?, ?, ?, ?, ?, ?)`,
   );
 
   let inserted = 0, skipped = 0;
@@ -354,13 +354,14 @@ function main() {
       const { options: shuffled, answer: shuffledAns } = shuffleSingleChoice(q.options, q.answer);
       const content = JSON.stringify(zhuyinize(q.prompt));
       const optionsJson = JSON.stringify(shuffled);
+      const optionsZhuyinJson = JSON.stringify(optionsZhuyin(shuffled));
 
       const dup = checkStmt.get(content);
       if (dup) { skipped += 1; continue; }
 
       insertStmt.run(
         q.theory_type, q.category_type, q.question_type,
-        content, optionsJson, shuffledAns, q.explanation,
+        content, optionsJson, optionsZhuyinJson, shuffledAns, q.explanation,
       );
       inserted += 1;
     }

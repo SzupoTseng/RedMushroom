@@ -227,3 +227,17 @@ export function zhuyinize(text: string): ZhuyinChar[] {
 
   return out;
 }
+
+/**
+ * Build the per-option bopomofo map for an options object, ready to JSON-store
+ * in questions.options_zhuyin.  { "1": "包子" } → { "1": [{char,pinyin}, …] }
+ * Comma-joined sorting options (e.g. "我,想要") are split & annotated per token
+ * but kept flat (commas dropped — sorting tiles store each option separately).
+ */
+export function optionsZhuyin(options: Record<string, string>): Record<string, ZhuyinChar[]> {
+  const out: Record<string, ZhuyinChar[]> = {};
+  for (const [k, v] of Object.entries(options)) {
+    out[k] = zhuyinize(v);
+  }
+  return out;
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSenLayout } from '../context/ConfigContext';
-import ZhuyinText from '../components/common/ZhuyinText';
+import ZhuyinText, { BpmfLabel } from '../components/common/ZhuyinText';
 import type { ZhuyinChar } from '../types';
 
 interface Monster {
@@ -12,6 +12,7 @@ interface Monster {
   is_due: boolean;
   content: ZhuyinChar[];
   options: Record<string, string>;
+  options_zhuyin?: Record<string, ZhuyinChar[]>;
   theory_type: string;
 }
 
@@ -140,7 +141,7 @@ export default function ErrorMonsterReview() {
               >
                 {k}
               </span>
-              <span className="bpmf-font">{v}</span>
+              <BpmfLabel text={v} zhuyin={current.options_zhuyin?.[k]} />
             </button>
           ))}
         </div>

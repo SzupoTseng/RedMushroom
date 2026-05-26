@@ -49,6 +49,7 @@ export default function Result() {
           question_type: string;
           content: string;
           options: string;
+          options_zhuyin?: string | null;
         }>
       } | null) => {
         if (!data?.details) return;
@@ -59,6 +60,7 @@ export default function Result() {
           question_type: d.question_type,
           content: JSON.parse(d.content),
           options: JSON.parse(d.options),
+          options_zhuyin: d.options_zhuyin ? JSON.parse(d.options_zhuyin) : undefined,
         })));
       })
       .catch(() => {});

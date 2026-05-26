@@ -5,7 +5,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { zhuyinize } from './questions/zhuyin';
+import { zhuyinize, optionsZhuyin } from './questions/zhuyin';
 import { shuffleSingleChoice } from './questions/shuffle';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -459,8 +459,8 @@ const tw: TwQuestion[] = [
 
 const insert = db.prepare(`
   INSERT OR IGNORE INTO questions
-    (subject, theory_type, category_type, question_type, content, options, correct_answer, explanation, score)
-  VALUES ('chinese', @theory_type, @category_type, @question_type, @content, @options, @correct_answer, @explanation, 10)
+    (subject, theory_type, category_type, question_type, content, options, options_zhuyin, correct_answer, explanation, score)
+  VALUES ('chinese', @theory_type, @category_type, @question_type, @content, @options, @options_zhuyin, @correct_answer, @explanation, 10)
 `);
 
 const insertMany = db.transaction((rows: TwQuestion[]) => {
@@ -470,6 +470,7 @@ const insertMany = db.transaction((rows: TwQuestion[]) => {
       ...q,
       content: JSON.stringify(zhuyinize(q.prompt)),
       options: JSON.stringify(options),
+      options_zhuyin: JSON.stringify(optionsZhuyin(options)),
       correct_answer: answer,
     });
   }

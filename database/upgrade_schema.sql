@@ -44,3 +44,10 @@ CREATE INDEX IF NOT EXISTS idx_dict_word ON dictionary(word);
 
 INSERT OR IGNORE INTO db_migrations (version, description)
 VALUES (4, 'dictionary table from ToneOZ tzdic data (~13k entries)');
+
+-- v5: options_zhuyin — per-char readings for option tiles (polyphonic-correct).
+-- Nullable; absent rows fall back to font rendering on the frontend.
+ALTER TABLE questions ADD COLUMN options_zhuyin TEXT;
+
+INSERT OR IGNORE INTO db_migrations (version, description)
+VALUES (5, 'options_zhuyin: per-char bopomofo for answer option tiles');

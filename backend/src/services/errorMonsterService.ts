@@ -18,6 +18,7 @@ interface MonsterRow {
   is_due: boolean;
   content: unknown;
   options: Record<string, string>;
+  options_zhuyin?: Record<string, Array<{ char: string; pinyin: string }>>;
   theory_type: string;
 }
 
@@ -91,7 +92,7 @@ export class ErrorMonsterService {
       .prepare(
         `SELECT m.question_id, m.streak_correct, m.next_review_time,
                 CASE WHEN m.next_review_time <= datetime('now') THEN 1 ELSE 0 END AS is_due,
-                q.content, q.options, q.theory_type
+                q.content, q.options, q.options_zhuyin, q.theory_type
          FROM user_error_monsters m
          JOIN questions q ON q.question_id = m.question_id
          WHERE m.user_id = ?
@@ -106,6 +107,7 @@ export class ErrorMonsterService {
         is_due: number;
         content: string;
         options: string;
+        options_zhuyin: string | null;
         theory_type: string;
       }>;
 
@@ -116,6 +118,9 @@ export class ErrorMonsterService {
       is_due: r.is_due === 1,
       content: JSON.parse(r.content),
       options: JSON.parse(r.options) as Record<string, string>,
+      options_zhuyin: r.options_zhuyin
+        ? (JSON.parse(r.options_zhuyin) as Record<string, Array<{ char: string; pinyin: string }>>)
+        : undefined,
       theory_type: r.theory_type,
     }));
   }

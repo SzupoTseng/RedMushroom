@@ -15,8 +15,8 @@ const questions = buildQuestionMatrix();
 
 const insertQ = db.prepare(`
   INSERT OR IGNORE INTO questions
-    (subject, theory_type, category_type, question_type, content, options, correct_answer, explanation, score)
-  VALUES (@subject, @theory_type, @category_type, @question_type, @content, @options, @correct_answer, @explanation, @score)
+    (subject, theory_type, category_type, question_type, content, options, options_zhuyin, correct_answer, explanation, score)
+  VALUES (@subject, @theory_type, @category_type, @question_type, @content, @options, @options_zhuyin, @correct_answer, @explanation, @score)
 `);
 
 const insertMany = db.transaction((qs: typeof questions) => {

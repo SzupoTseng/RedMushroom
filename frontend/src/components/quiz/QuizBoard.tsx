@@ -6,7 +6,7 @@ import SortingDisplay from './SortingDisplay';
 import SpeechRecorder from './SpeechRecorder';
 import { useSenLayout } from '../../context/ConfigContext';
 import type { ZhuyinChar } from '../../types';
-import ZhuyinText from '../common/ZhuyinText';
+import ZhuyinText, { BpmfLabel } from '../common/ZhuyinText';
 
 export default function QuizBoard() {
   const { state, submitAnswer, nextQuestion, finishQuiz, resetQuiz } = useQuiz();
@@ -214,7 +214,7 @@ export default function QuizBoard() {
                   >
                     {key}
                   </span>
-                  <span className="bpmf-font">{label}</span>
+                  <BpmfLabel text={label} zhuyin={question.options_zhuyin?.[key]} />
                 </button>
               );
             })}

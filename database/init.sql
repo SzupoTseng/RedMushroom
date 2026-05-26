@@ -51,6 +51,10 @@ CREATE TABLE IF NOT EXISTS questions (
   content       TEXT    NOT NULL,
   -- options: JSON object {"1":"...","2":"...","3":"...","4":"..."}
   options       TEXT    NOT NULL,
+  -- options_zhuyin: JSON object {"1":[{char,pinyin}],...} — per-char readings
+  -- for option tiles, so polyphonic chars show the correct contextual reading
+  -- (nullable; absent → frontend falls back to font rendering)
+  options_zhuyin TEXT,
   correct_answer TEXT   NOT NULL,
   explanation   TEXT    NOT NULL DEFAULT '',
   score         INTEGER NOT NULL DEFAULT 10,

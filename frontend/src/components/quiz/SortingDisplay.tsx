@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import type { Question } from '../../types';
+import { BpmfLabel } from '../common/ZhuyinText';
 
 interface Props {
   question: Question;
@@ -23,7 +24,11 @@ export default function SortingDisplay({ question, onConfirm, disabled }: Props)
   // The parent passes key={question.question_id} so this component remounts per question,
   // but useEffect guards against any edge case where key is omitted.
   const makeInitial = () => shuffleArray(
-    Object.keys(question.options).map((k) => ({ id: k, label: question.options[k] }))
+    Object.keys(question.options).map((k) => ({
+      id: k,
+      label: question.options[k],
+      zhuyin: question.options_zhuyin?.[k],
+    }))
   );
   const [items, setItems] = useState(makeInitial);
 
@@ -58,7 +63,7 @@ export default function SortingDisplay({ question, onConfirm, disabled }: Props)
                         ${snap.isDragging ? 'border-mushroom-400 shadow-lg' : 'border-gray-200'}`}
                     >
                       <span className="text-gray-300 text-lg">⠿</span>
-                      <span className="text-lg font-semibold bpmf-font">{item.label}</span>
+                      <BpmfLabel text={item.label} zhuyin={item.zhuyin} className="text-lg font-semibold" />
                     </div>
                   )}
                 </Draggable>

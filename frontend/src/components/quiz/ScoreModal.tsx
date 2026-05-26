@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Question, ZhuyinChar } from '../../types';
 import SortingDisplay from './SortingDisplay';
-import ZhuyinText from '../common/ZhuyinText';
+import ZhuyinText, { BpmfLabel } from '../common/ZhuyinText';
 
 export interface QuestionDetail {
   question_id: number;
@@ -10,6 +10,7 @@ export interface QuestionDetail {
   question_type: string;
   content: ZhuyinChar[];
   options: Record<string, string>;
+  options_zhuyin?: Record<string, ZhuyinChar[]>;
 }
 
 interface Props {
@@ -149,6 +150,7 @@ export default function ScoreModal({
                     question_id: retryDetail.question_id,
                     content: retryDetail.content,
                     options: retryDetail.options,
+                    options_zhuyin: retryDetail.options_zhuyin,
                     question_type: 'sorting',
                     theory_type: 'usage',
                     category_type: 'social',
@@ -178,7 +180,7 @@ export default function ScoreModal({
                       <span className="inline-block w-6 h-6 rounded-full bg-gray-100 text-center leading-6 text-xs font-bold mr-2">
                         {key}
                       </span>
-                      <span className="bpmf-font">{label}</span>
+                      <BpmfLabel text={label} zhuyin={retryDetail.options_zhuyin?.[key]} />
                     </button>
                   );
                 })}

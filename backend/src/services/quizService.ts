@@ -9,6 +9,7 @@ interface QuestionRow {
   question_type: string;
   content: string;
   options: string;
+  options_zhuyin: string | null;
   correct_answer: string;
   explanation: string;
   score: number;
@@ -22,6 +23,7 @@ interface QuestionForClient {
   question_type: string;
   content: unknown;
   options: Record<string, string>;
+  options_zhuyin?: Record<string, Array<{ char: string; pinyin: string }>>;
   score: number;
   subject: string;
 }
@@ -299,7 +301,7 @@ export class QuizService {
     const questions = db
       .prepare(
         `SELECT question_id, theory_type, category_type, question_type,
-                content, options, correct_answer, explanation, score, subject
+                content, options, options_zhuyin, correct_answer, explanation, score, subject
          FROM questions WHERE question_id IN (${placeholders})`
       )
       .all(...selectedIds) as QuestionRow[];
@@ -331,6 +333,9 @@ export class QuizService {
       question_type: q.question_type,
       content: JSON.parse(q.content),
       options: JSON.parse(q.options) as Record<string, string>,
+      options_zhuyin: q.options_zhuyin
+        ? (JSON.parse(q.options_zhuyin) as Record<string, Array<{ char: string; pinyin: string }>>)
+        : undefined,
       score: q.score,
       subject: q.subject,
     }));
@@ -484,7 +489,7 @@ export class QuizService {
     const details = db
       .prepare(
         `SELECT d.question_id, d.user_answer, d.is_correct,
-                q.content, q.options, q.correct_answer, q.explanation, q.question_type
+                q.content, q.options, q.options_zhuyin, q.correct_answer, q.explanation, q.question_type
          FROM quiz_details d
          JOIN questions q ON q.question_id = d.question_id
          WHERE d.session_id = ?`

@@ -1,5 +1,5 @@
 import { TEMPLATES, templateRows, pickPrompt } from './templates';
-import { zhuyinize } from './zhuyin';
+import { zhuyinize, optionsZhuyin } from './zhuyin';
 import { shuffleSingleChoice } from './shuffle';
 
 export interface Question {
@@ -9,6 +9,7 @@ export interface Question {
   question_type: 'single_choice' | 'sorting';
   content: string;
   options: string;
+  options_zhuyin: string;
   correct_answer: string;
   explanation: string;
   score: number;
@@ -31,6 +32,7 @@ export function buildQuestionMatrix(): Question[] {
         question_type: t.question_type,
         content: JSON.stringify(zhuyinize(promptText)),
         options: JSON.stringify(shuffledOptions),
+        options_zhuyin: JSON.stringify(optionsZhuyin(shuffledOptions)),
         correct_answer: shuffledAnswer,
         explanation: t.explanation(v),
         score: 10,

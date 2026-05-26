@@ -26,6 +26,8 @@ export interface Question {
   question_type: QuestionType;
   content: ZhuyinChar[];
   options: Record<string, string>;
+  // per-option 逐字注音（破音字正確讀音）；舊資料可能沒有 → 前端退回字型渲染
+  options_zhuyin?: Record<string, ZhuyinChar[]>;
   score: number;
   subject: string;
 }

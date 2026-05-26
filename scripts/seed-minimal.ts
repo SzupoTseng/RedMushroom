@@ -5,6 +5,7 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcrypt';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { optionsZhuyin } from './questions/zhuyin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, '../database/redmushroom.db');
@@ -91,12 +92,15 @@ const questions = [
 
 const insertQ = db.prepare(`
   INSERT OR IGNORE INTO questions
-  (subject, theory_type, category_type, question_type, content, options, correct_answer, explanation, score)
-  VALUES (@subject, @theory_type, @category_type, @question_type, @content, @options, @correct_answer, @explanation, @score)
+  (subject, theory_type, category_type, question_type, content, options, options_zhuyin, correct_answer, explanation, score)
+  VALUES (@subject, @theory_type, @category_type, @question_type, @content, @options, @options_zhuyin, @correct_answer, @explanation, @score)
 `);
 
 const insertAllQ = db.transaction((qs: typeof questions) => {
-  for (const q of qs) insertQ.run(q);
+  for (const q of qs) {
+    const opts = JSON.parse(q.options) as Record<string, string>;
+    insertQ.run({ ...q, options_zhuyin: JSON.stringify(optionsZhuyin(opts)) });
+  }
 });
 insertAllQ(questions);
 console.log(`[seed-minimal] ✅ 植入 ${questions.length} 道示範題目`);
