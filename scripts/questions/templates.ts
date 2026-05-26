@@ -589,15 +589,23 @@ export const TEMPLATES: Template[] = [
     },
   },
   {
+    // 動詞與交通工具必須配對：捷運／公車用「搭、坐」，腳踏車類用「騎」。
+    // 不可 Cartesian 展開（否則會出現「騎捷運」「搭YouBike」等錯誤語句）。
     theory_type: 'usage', category_type: 'travel', question_type: 'sorting',
     prompts: SORTING_PROMPTS,
     options: (v) => ({ '1': v.s, '2': v.v, '3': v.where, '4': v.purpose }),
     answer: '1,2,3,4',
     explanation: (v) => `正確語序：${v.s}${v.v}${v.where}${v.purpose}。`,
+    data: [
+      { v: '搭', where: '捷運' },
+      { v: '坐', where: '捷運' },
+      { v: '搭', where: '公車' },
+      { v: '坐', where: '公車' },
+      { v: '騎', where: '腳踏車' },
+      { v: '騎', where: 'YouBike' },
+    ],
     vars: {
       s:       ['我', '我們', '小華', '爸爸'],
-      v:       ['搭', '坐', '騎'],
-      where:   ['捷運', 'YouBike', '公車'],
       purpose: ['去學校', '去夜市', '去公園'],
     },
   },
