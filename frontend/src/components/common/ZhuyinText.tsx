@@ -13,7 +13,7 @@
  */
 import type { ZhuyinChar } from '../../types';
 import { useConfig } from '../../context/ConfigContext';
-import { usePolyphonicSet } from '../../hooks/usePolyphonicSet';
+import { useIvsDict, applyIvs } from '../../hooks/useIvsDict';
 
 interface Props {
   content: ZhuyinChar[];
@@ -50,7 +50,7 @@ export function BpmfLabel({
 
 export default function ZhuyinText({ content, className = '' }: Props) {
   const { showZhuyin, bpmfFont } = useConfig();
-  const polyphonic = usePolyphonicSet();
+  const ivs = useIvsDict();
 
   // 注音關閉：純文字
   if (!showZhuyin) {
@@ -61,22 +61,17 @@ export default function ZhuyinText({ content, className = '' }: Props) {
     );
   }
 
-  // 字型模式：一般字交給字型畫注音；破音字（且有讀音資料）改用 ruby 覆蓋，
-  // 確保顯示的是上下文正確的讀音而非字型固定的預設讀音。
+  // 字型模式：全部交給注音字型畫，外觀一致（無 ruby 外掛）。破音字透過 IVS
+  // 變體選擇符（U+E01E0+idx）讓字型畫出上下文正確的讀音，而非固定預設讀音。
   if (bpmfFont !== 'none') {
     return (
-      <span className={className}>
-        {content.map((c, i) => {
-          const overridePoly = c.pinyin && polyphonic.has(c.char);
-          return overridePoly
-            ? <RubyChar key={i} c={c} />
-            : <span key={i} className="bpmf-font">{c.char}</span>;
-        })}
+      <span className={`bpmf-font ${className}`}>
+        {content.map((c, i) => <span key={i}>{applyIvs(c.char, c.pinyin, ivs)}</span>)}
       </span>
     );
   }
 
-  // 預設：全部 <ruby>/<rt> 標註
+  // 預設（不用字型）：全部 <ruby>/<rt> 標註，讀音來自校正過的資料
   return (
     <span className={className}>
       {content.map((c, i) =>
