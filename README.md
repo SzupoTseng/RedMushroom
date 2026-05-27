@@ -25,19 +25,20 @@
 10. [Score & Reward System](#score--reward-system)
 11. [Typing Game](#typing-game)
 12. [Word Typing Game (PvZ-style)](#word-typing-game-pvz-style)
-13. [Bopomofo Font System](#bopomofo-font-system)
-14. [Reading Helper (Dictionary Side Panel)](#reading-helper-dictionary-side-panel)
-15. [Reading Tool (Annotate an Article)](#reading-tool-annotate-an-article)
-16. [Extension Modules (Printable Worksheets & Stroke Practice)](#extension-modules-printable-worksheets--stroke-practice)
-17. [Student Name & Belonging System](#student-name--belonging-system)
-18. [Quiz Transition Effects](#quiz-transition-effects)
-19. [SEN Mode Design](#sen-mode-design)
-20. [Multi-Subject Modules](#multi-subject-modules)
-21. [Testing](#testing)
-22. [Security](#security)
-23. [Development Workflow](#development-workflow)
-24. [Troubleshooting](#troubleshooting)
-25. [License](#license)
+13. [English Typing Game](#english-typing-game)
+14. [Bopomofo Font System](#bopomofo-font-system)
+15. [Reading Helper (Dictionary Side Panel)](#reading-helper-dictionary-side-panel)
+16. [Reading Tool (Annotate an Article)](#reading-tool-annotate-an-article)
+17. [Extension Modules (Printable Worksheets & Stroke Practice)](#extension-modules-printable-worksheets--stroke-practice)
+18. [Student Name & Belonging System](#student-name--belonging-system)
+19. [Quiz Transition Effects](#quiz-transition-effects)
+20. [SEN Mode Design](#sen-mode-design)
+21. [Multi-Subject Modules](#multi-subject-modules)
+22. [Testing](#testing)
+23. [Security](#security)
+24. [Development Workflow](#development-workflow)
+25. [Troubleshooting](#troubleshooting)
+26. [License](#license)
 
 ---
 
@@ -60,6 +61,7 @@
 #### Typing games
 - 🎮 **Character Typing Game**: 100 levels of falling characters; type the bopomofo to vaporise each one.
 - 🍄 **Word Typing Game (PvZ-style)**: dinosaur slowly closes in from the right while words float in; correct typed word fires a mushroom seed that hits the word AND pushes the dinosaur back. 100 levels × 2-minute timer each. Vocabulary = 1,000 most common 2-character compounds derived locally from our MIT-licensed dictionary.
+- ⌨️ **English Typing Game**: a center table-card shows one English word + part of speech + Chinese gloss (with correct-tone bopomofo); type the word to advance. Countdown timer (60/120/180 s); results show correct count and WPM. **No levels, no HP, no mushroom/dinosaur** — pure speed typing. Vocabulary = 1,946 words extracted from the user-supplied official "國中 2000" word list (facts only, PDF not redistributed) merged with a curated clean-room base; glosses annotated via the same `zhuyinize()` dictionary path used app-wide.
 - 💚 **IME-compatible**: uses `compositionupdate` + `compositionend` so users can type with the Chinese IME on. No need to disable input method.
 - ✏️ **Real-time bopomofo display**: shows the bopomofo being composed.
 
@@ -577,6 +579,32 @@ Each correct word POSTs `{ exp: 5 + word.length × 2, reward: half of exp, sourc
 
 ---
 
+### English Typing Game
+
+A speed-typing drill that sits next to the Word Typing Game under the home page's "extras". Route `/english-typing` (`frontend/src/pages/EnglishTypingGame.tsx`).
+
+#### Gameplay
+
+- A single table-style card in the center shows one English word (large) + part of speech on top, and the Chinese gloss below, rendered with correct-tone bopomofo via the shared `<ZhuyinText>`.
+- Type the word into the input (case-insensitive, trimmed) → an exact match auto-advances to the next word; a Skip button is available.
+- **Countdown timer** (60 / 120 / 180 s). On time-up, a results card shows correct count, words-per-minute (WPM), and skips.
+- **No levels, no HP, no mushroom/dinosaur** — just speed typing.
+
+#### Vocabulary (clean-room base + official-list extraction)
+
+`frontend/public/data/english-vocab.json` (1,946 words, `[{ en, pos, zh, zhuyin }]`) is produced by two local scripts:
+
+1. `python3 scripts/extract-moe-2000.py` — extracts `en<TAB>pos<TAB>zh` from the **user-supplied** official "國中 2000 單字" PDF into `scripts/data/english-vocab-source.tsv` (word→pos/gloss facts only; the PDF itself is not redistributed).
+2. `npx tsx scripts/build-english-vocab.ts` — merges a curated clean-room base list with that TSV (external wins on duplicate `en`) and runs every Chinese gloss through `zhuyinize()` (longest-prefix dictionary match) for correct tones, then writes the JSON.
+
+> Characters absent from the ToneOZ dictionary (e.g. `滿`, `唇`) were added to the `TABLE` in `scripts/questions/zhuyin.ts` so every Han character gets bopomofo.
+
+#### Score saving
+
+Written once on time-up: `POST /api/quiz/game-score { exp: correctCount, reward: correctCount/2, source: 'english-typing' }`.
+
+---
+
 ### Bopomofo Font System
 
 The system can render bopomofo annotation in two modes:
@@ -1031,19 +1059,20 @@ MIT License — free for use and adaptation in schools worldwide. The "RedMushro
 10. [分數與獎勵系統](#分數與獎勵系統)
 11. [打字遊戲](#打字遊戲)
 12. [語詞快打（蘑菇對恐龍）](#語詞快打蘑菇對恐龍)
-13. [注音字型系統](#注音字型系統)
-14. [選字讀音助手](#選字讀音助手)
-15. [讀音工具（貼文章標注音）](#讀音工具貼文章標注音)
-16. [擴充模組（學習單列印＋筆順練習）](#擴充模組學習單列印筆順練習)
-17. [學生姓名與歸屬感系統](#學生姓名與歸屬感系統)
-18. [題目切換轉場](#題目切換轉場)
-19. [SEN 模式設計](#sen-模式設計)
-20. [多科目模組](#多科目模組)
-21. [測試](#測試)
-22. [安全設計](#安全設計)
-23. [開發流程](#開發流程)
-19. [疑難排解](#疑難排解)
-20. [授權](#授權)
+13. [英文快打](#英文快打)
+14. [注音字型系統](#注音字型系統)
+15. [選字讀音助手](#選字讀音助手)
+16. [讀音工具（貼文章標注音）](#讀音工具貼文章標注音)
+17. [擴充模組（學習單列印＋筆順練習）](#擴充模組學習單列印筆順練習)
+18. [學生姓名與歸屬感系統](#學生姓名與歸屬感系統)
+19. [題目切換轉場](#題目切換轉場)
+20. [SEN 模式設計](#sen-模式設計)
+21. [多科目模組](#多科目模組)
+22. [測試](#測試)
+23. [安全設計](#安全設計)
+24. [開發流程](#開發流程)
+25. [疑難排解](#疑難排解)
+26. [授權](#授權)
 
 ---
 
@@ -1066,6 +1095,7 @@ MIT License — free for use and adaptation in schools worldwide. The "RedMushro
 #### 打字遊戲
 - 🎮 **單字落下打字遊戲**：100 關難度遞增。
 - 🍄 **語詞快打（蘑菇對恐龍）**：類植物大戰殭屍——左邊蘑菇、右邊恐龍逼近，輸入畫面上的詞 + Enter → 蘑菇發射種子打中詞，同時把恐龍推回去。100 關 × 每關 2 分鐘。詞庫為從本機 MIT 授權字典過濾出來的 1,000 個常用 2 字詞。
+- ⌨️ **英文快打**：正中央以表格卡片呈現一個英文單字 + 詞性 + 中文說明（含正確聲調注音），打出該單字即換下一題。倒數計時（60／120／180 秒），結算顯示答對數、每分鐘字數（WPM）。**無關卡、無血量、無蘑菇恐龍**，純速打練習。詞庫 1,946 字：使用者提供之官方「國中 2000 單字」PDF 萃取（僅取 word→詞性／中文等事實，未轉載 PDF）＋ clean-room 自建基礎清單，中文說明走與全站相同的 `zhuyinize()` 字典最長字首匹配標注正確聲調。
 - 💚 **IME 相容**：使用 `compositionupdate` + `compositionend`，中文輸入法 ON 也能玩。
 - ✏️ **注音即時顯示**：IME 組字時注音動態顯示在輸入框。
 
@@ -1073,7 +1103,7 @@ MIT License — free for use and adaptation in schools worldwide. The "RedMushro
 - 📊 **經驗值 EXP**（`total_exp`）：從測驗與遊戲累積，永不減少，等級用此。
 - 🎁 **兌換獎品分數 reward_points**：獨立的可消費貨幣，與 EXP 同速率累積。預留給未來商店扣減（不影響 EXP）。
 - 🆙 **等級門檻翻倍**：Lv1→2 = 5,000，Lv2→3 = 10,000，Lv3→4 = 20,000 ...（`5000 × 2^(lv-1)`）。
-- 💯 **1:1 分數換 EXP**：得 80 分 → +80 EXP；通過再 +10 獎勵；打字遊戲每字 1 EXP，語詞快打每詞 `5 + 字數×2` EXP。
+- 💯 **1:1 分數換 EXP**：得 80 分 → +80 EXP；通過再 +10 獎勵；打字遊戲每字 1 EXP，語詞快打每詞 `5 + 字數×2` EXP，英文快打結算時每答對 1 字 +1 EXP（`source: 'english-typing'`）。
 - 🏠 **主畫面分數卡**：等級、進度條、總 EXP、兌換分數、連勝火焰，每場結束後自動刷新。
 - ❌ **中途離開 = 沒分數**（統一的返回按鈕會丟棄進行中的 session）。
 
@@ -1094,6 +1124,8 @@ MIT License — free for use and adaptation in schools worldwide. The "RedMushro
 - 📝 **數學練習產生器**：純程序化生成 +／−／×／÷ 題目，可設定難度範圍、題數、連算（2-4 元）。列印時自動隱藏設定區。
 - ✍️ **田字格習字紙**：純 CSS 繪製田／米字格，可選示範模式（首格示範／全描紅／全空白）＋ 淡色臨摹列。
 - 📋 **練習單列印**：從本機題庫抽題，產出可列印的學習單，學生版／家長版（顯示答案）切換。
+- 🔤 **注音符號習字紙**：勾選 37 個注音符號（聲母 21／介音 3／韻母 13）的全部或子集，產出田字格描寫練習頁，可列印。
+- 📜 **豎排注音摹寫學習單**：貼一篇短文章 → 產生直排（由右至左）注音學習單，旁邊有淡色／空白摹寫欄。讀音經後端 `/api/dict/annotate` 最長字首匹配校正（正式→ㄓㄥˋ、中華→ㄏㄨㄚˊ），可列印。
 - 🖋 **筆順練習**：見上方「讀音與字典工具」。
 
 #### 無障礙與 UI
@@ -1565,6 +1597,32 @@ Lv4 → 5：40,000
 #### 分數寫入
 
 每打中一個詞：`POST /api/quiz/game-score { exp: 5 + 詞長×2, reward: exp/2, source: 'word-typing-lv${level}' }`。通關獎勵：`10 + Lv × 2` EXP。
+
+---
+
+### 英文快打
+
+看單字打字的速打練習，與語詞快打並列於首頁「額外功能」，路由 `/english-typing`（`frontend/src/pages/EnglishTypingGame.tsx`）。
+
+#### 玩法
+
+- 正中央一張表格卡片：上格顯示英文單字（大字）+ 詞性，下格顯示中文說明，注音以全站共用的 `<ZhuyinText>` 呈現（聲調正確）。
+- 在輸入框打出該英文單字（大小寫不分、自動去頭尾空白）→ 完全相符即自動換下一題；可「跳過」。
+- **讀秒倒數**（60／120／180 秒可選），時間到結算，顯示答對數、每分鐘字數（WPM）、跳過數。
+- **無關卡、無血量、無蘑菇恐龍**，純速打。
+
+#### 詞庫建置（clean-room + 官方清單萃取）
+
+詞庫 `frontend/public/data/english-vocab.json`（1,946 字，`[{ en, pos, zh, zhuyin }]`），由兩段本機腳本產出：
+
+1. `python3 scripts/extract-moe-2000.py` — 從**使用者提供**之官方「國中 2000 單字」PDF 萃取 `en<TAB>詞性<TAB>中文` 至 `scripts/data/english-vocab-source.tsv`（只取單字→詞性／中文等事實，**不轉載 PDF 本身**）。
+2. `npx tsx scripts/build-english-vocab.ts` — 合併 clean-room 自建基礎清單與上述 TSV（外部清單覆蓋同字），中文說明全部走 `zhuyinize()`（字典最長字首匹配）標注正確聲調注音，輸出 JSON。
+
+> ToneOZ 字典缺漏的單字（如 `滿`、`唇`）已補進 `scripts/questions/zhuyin.ts` 的 `TABLE`，確保每個漢字都有注音。
+
+#### 分數寫入
+
+時間到結算時一次寫入：`POST /api/quiz/game-score { exp: 答對數, reward: 答對數/2, source: 'english-typing' }`。
 
 ---
 
