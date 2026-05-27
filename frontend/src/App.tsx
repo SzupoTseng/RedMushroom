@@ -20,6 +20,7 @@ const Leaderboard        = lazy(() => import('./pages/Leaderboard'));
 const Pvp                = lazy(() => import('./pages/Pvp'));
 const TypingGame         = lazy(() => import('./pages/TypingGame'));
 const WordTypingGame     = lazy(() => import('./pages/WordTypingGame'));
+const EnglishTypingGame  = lazy(() => import('./pages/EnglishTypingGame'));
 const ReadingTool        = lazy(() => import('./pages/ReadingTool'));
 const MathPracticeGen    = lazy(() => import('./pages/MathPracticeGenerator'));
 const WritingGrid        = lazy(() => import('./pages/WritingGrid'));
@@ -67,6 +68,7 @@ function AppRoutes() {
           <Route path="/pvp" element={<Pvp />} />
         <Route path="/typing-game" element={<TypingGame />} />
         <Route path="/word-typing" element={<WordTypingGame />} />
+        <Route path="/english-typing" element={<EnglishTypingGame />} />
         <Route path="/reading-tool" element={<ReadingTool />} />
         <Route path="/ext/math" element={<MathPracticeGen />} />
         <Route path="/ext/writing-grid" element={<WritingGrid />} />

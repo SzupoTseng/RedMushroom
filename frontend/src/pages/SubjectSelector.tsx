@@ -218,6 +218,14 @@ export default function SubjectSelector() {
           <div className="text-xs text-gray-500 mt-1">蘑菇射種子打恐龍、100 關</div>
         </button>
         <button
+          onClick={() => navigate('/english-typing')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-sky-200 bg-sky-50"
+        >
+          <div className="text-3xl mb-1">⌨️</div>
+          <div className="font-black text-gray-800">英文快打</div>
+          <div className="text-xs text-gray-500 mt-1">看單字打字、倒數計時、國中 2000 字</div>
+        </button>
+        <button
           onClick={() => navigate('/monsters')}
           className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-transparent"
         >
