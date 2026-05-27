@@ -25,6 +25,8 @@ const MathPracticeGen    = lazy(() => import('./pages/MathPracticeGenerator'));
 const WritingGrid        = lazy(() => import('./pages/WritingGrid'));
 const PrintWorksheet     = lazy(() => import('./pages/PrintWorksheet'));
 const StrokePractice     = lazy(() => import('./pages/StrokePractice'));
+const BopomofoSymbolSheet = lazy(() => import('./pages/BopomofoSymbolSheet'));
+const VerticalBopomofoSheet = lazy(() => import('./pages/VerticalBopomofoSheet'));
 
 function Loading() {
   return (
@@ -70,6 +72,8 @@ function AppRoutes() {
         <Route path="/ext/writing-grid" element={<WritingGrid />} />
         <Route path="/ext/worksheet" element={<PrintWorksheet />} />
         <Route path="/ext/stroke" element={<StrokePractice />} />
+        <Route path="/ext/bopomofo-symbols" element={<BopomofoSymbolSheet />} />
+        <Route path="/ext/vertical-bopomofo" element={<VerticalBopomofoSheet />} />
           {(user.role === 'teacher') && (
             <Route path="/admin" element={<Admin />} />
           )}

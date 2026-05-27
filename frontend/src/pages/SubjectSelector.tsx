@@ -275,6 +275,22 @@ export default function SubjectSelector() {
             <div className="font-black text-gray-800">練習單列印</div>
             <div className="text-xs text-gray-500 mt-1">從本機題庫抽題、可列印</div>
           </button>
+          <button
+            onClick={() => navigate('/ext/bopomofo-symbols')}
+            className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+          >
+            <div className="text-3xl mb-1">ㄅ</div>
+            <div className="font-black text-gray-800">注音符號習字紙</div>
+            <div className="text-xs text-gray-500 mt-1">37 符號可選、描寫、可列印</div>
+          </button>
+          <button
+            onClick={() => navigate('/ext/vertical-bopomofo')}
+            className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-200 bg-amber-50"
+          >
+            <div className="text-3xl mb-1">📜</div>
+            <div className="font-black text-gray-800">豎排注音摹寫</div>
+            <div className="text-xs text-gray-500 mt-1">貼文章生直排注音、可列印</div>
+          </button>
         </div>
       </div>
     </div>

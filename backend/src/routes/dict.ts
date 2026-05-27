@@ -14,9 +14,27 @@
  * runs on selection events that may fire before any auth context is loaded.
  */
 import { Router, Request, Response } from 'express';
-import { lookup, lookupPerChar, getCharMap, getPolyphonicList } from '../services/dictService';
+import { lookup, lookupPerChar, getCharMap, getPolyphonicList, annotate } from '../services/dictService';
 
 const router = Router();
+
+/**
+ * GET /api/dict/annotate?q=<text>
+ * Context-aware per-character bopomofo (longest-prefix word match), for the
+ * vertical bopomofo worksheet. Returns { chars: [{char, pinyin}] }.
+ * Public; capped to short articles.
+ */
+router.get('/annotate', (req: Request, res: Response) => {
+  const q = String(req.query.q ?? '');
+  if (!q.trim()) return res.status(400).json({ error: 'missing q parameter' });
+  if (q.length > 1500) return res.status(400).json({ error: 'text too long (max 1500 chars)' });
+  try {
+    return res.json({ chars: annotate(q) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'annotate failed';
+    return res.status(500).json({ error: msg });
+  }
+});
 
 router.get('/lookup', (req: Request, res: Response) => {
   const q = String(req.query.q ?? '').trim();

@@ -40,6 +40,64 @@ function loadDict(): Record<string, DictEntry[]> {
   }
 }
 
+// Curated single-char polyphonic defaults — the dict orders some readings with
+// the less-common one first (華→ㄏㄨㄚ, 正→ㄓㄥ, 被→ㄆㄧ...). For standalone chars
+// not covered by a multi-char word match, prefer the grade-3-4 common reading.
+// Canonical source mirrored from scripts/questions/zhuyin.ts TABLE.
+const CURATED_CHAR: Record<string, string> = {
+  '要': 'ㄧㄠˋ', '個': '˙ㄍㄜ', '華': 'ㄏㄨㄚˊ', '正': 'ㄓㄥˋ', '被': 'ㄅㄟˋ',
+  '和': 'ㄏㄢˋ', '長': 'ㄔㄤˊ', '重': 'ㄓㄨㄥˋ', '得': 'ㄉㄜˊ', '為': 'ㄨㄟˋ',
+  '教': 'ㄐㄧㄠ', '樂': 'ㄌㄜˋ', '行': 'ㄒㄧㄥˊ', '地': '˙ㄉㄜ', '的': '˙ㄉㄜ',
+  '了': '˙ㄌㄜ', '著': '˙ㄓㄜ', '會': 'ㄏㄨㄟˋ', '還': 'ㄏㄞˊ', '都': 'ㄉㄡ',
+  '少': 'ㄕㄠˇ', '好': 'ㄏㄠˇ', '中': 'ㄓㄨㄥ', '分': 'ㄈㄣ', '只': 'ㄓˇ',
+  '不': 'ㄅㄨˋ', '大': 'ㄉㄚˋ', '子': '˙ㄗ', '麼': '˙ㄇㄜ',
+};
+
+/** Strip "（變）..." tone-sandhi notes and collapse whitespace. */
+function cleanReading(z: string): string {
+  return z.replace(/[（(]變[）)][\s\S]*$/u, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Annotate arbitrary text with per-character bopomofo, using context (longest
+ * multi-char dictionary word match) so polyphonic readings are correct —
+ * mirrors scripts/questions/zhuyin.ts zhuyinize(). Non-Han chars get ''.
+ */
+export function annotate(text: string): Array<{ char: string; pinyin: string }> {
+  const dict = loadDict();
+  const chars = Array.from(text);
+  const out: Array<{ char: string; pinyin: string }> = [];
+  const RE_CJK = /[㐀-鿿]/;
+  const MAX = 6;
+  let i = 0;
+  while (i < chars.length) {
+    let matched = false;
+    if (RE_CJK.test(chars[i])) {
+      for (let len = Math.min(MAX, chars.length - i); len >= 2; len--) {
+        const word = chars.slice(i, i + len).join('');
+        const entry = dict[word]?.[0];
+        if (!entry) continue;
+        const sylls = cleanReading(entry.zhuyin).split(' ').filter(Boolean);
+        if (sylls.length !== len) continue;
+        for (let k = 0; k < len; k++) out.push({ char: chars[i + k], pinyin: sylls[k] });
+        i += len;
+        matched = true;
+        break;
+      }
+    }
+    if (matched) continue;
+    const c = chars[i];
+    let pinyin = CURATED_CHAR[c];
+    if (pinyin === undefined) {
+      const de = dict[c]?.[0];
+      pinyin = de ? cleanReading(de.zhuyin).split(' ')[0] : '';
+    }
+    out.push({ char: c, pinyin });
+    i += 1;
+  }
+  return out;
+}
+
 /**
  * Best-effort lookup:
  * 1. Exact match on the full query

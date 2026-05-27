@@ -190,6 +190,54 @@
   border-left: 1px solid #aaa;
 }
 
+/* ── 豎排注音摹寫學習單（VerticalBopomofoSheet）──
+ * 直排、由右至左：用 row-reverse 讓第一行在最右側。
+ */
+.vbpmf-page {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.vbpmf-col {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px dashed #ddd;
+}
+.vbpmf-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 6px;
+  border-bottom: 1px dashed #e5e5e5;
+  min-height: 64px;
+}
+.vbpmf-han {
+  font-size: 1.4rem;
+  line-height: 1.1;
+  color: #111;
+  margin-bottom: 2px;
+}
+.vbpmf-readings {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+}
+/* 注音直排（沿用 .bpmf-right 結構）放大一點 */
+.vbpmf-readings .bpmf-right { font-size: 0.9rem; }
+.vbpmf-model { color: #111; }
+/* 摹寫欄：淡灰 + 虛線框，提示在此描寫 */
+.vbpmf-trace {
+  color: #c9c9c9;
+  border: 1px dashed #d8d8d8;
+  border-radius: 4px;
+  min-width: 1.4em;
+  min-height: 2.4em;
+  padding: 2px;
+}
+
 /* ── 題目切換動畫（QuizBoard）──
  * 題卡 key 變動時觸發 slide-in，splash 同時 scale+pulse 引導視線。
  */
