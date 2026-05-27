@@ -31,9 +31,27 @@ export function getDb(): Database.Database {
       _db.exec(schema);
       console.log('[DB] 資料庫初始化完成');
     }
+
+    // 對「既有」資料庫補上新欄位（SQLite 沒有 ADD COLUMN IF NOT EXISTS）。
+    // 每次開機冪等執行：欄位已存在就跳過，缺了就補。這讓持久化的舊 DB
+    // 在部署新版後端時不會因缺欄位而報「no such column」。
+    runMigrations(_db);
   }
 
   return _db;
+}
+
+function runMigrations(db: Database.Database): void {
+  const ensureColumn = (table: string, column: string, ddl: string): void => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (cols.length > 0 && !cols.some((c) => c.name === column)) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+      console.log(`[DB] migration: added ${table}.${column}`);
+    }
+  };
+  // additive column migrations (mirror database/upgrade_schema.sql)
+  ensureColumn('users', 'reward_points', 'reward_points INTEGER NOT NULL DEFAULT 0');
+  ensureColumn('questions', 'options_zhuyin', 'options_zhuyin TEXT');
 }
 
 export default getDb;

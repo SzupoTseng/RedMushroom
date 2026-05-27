@@ -16,6 +16,14 @@ TSX=/app/scripts/node_modules/.bin/tsx
 
 mkdir -p "$DB_DIR"
 
+# FORCE_RESEED=1 → wipe the DB so the seeds re-run from scratch with the
+# latest content (corrected polyphonic readings, options_zhuyin, etc.).
+# Set it once in Railway, redeploy, then remove the variable.
+if [ "${FORCE_RESEED:-0}" = "1" ]; then
+  echo "[entrypoint] FORCE_RESEED=1 — wiping DB for a clean re-seed"
+  rm -f "$DB_PATH" "$DB_PATH-wal" "$DB_PATH-shm" "$SETUP_MARKER"
+fi
+
 if [ ! -f "$SETUP_MARKER" ] || [ ! -f "$DB_PATH" ]; then
   echo "[entrypoint] first boot — initialising schema + seeds..."
 
