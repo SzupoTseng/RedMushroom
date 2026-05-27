@@ -25,6 +25,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Schema-drift gate: fails the build if a migration column is missing
+      # from init.sql or from database.ts runMigrations(). Prevents the
+      # "no such column" class of bug from ever shipping again.
+      - name: Schema consistency check
+        run: python3 scripts/check-schema.py
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
