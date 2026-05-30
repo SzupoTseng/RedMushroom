@@ -51,6 +51,34 @@ function run(cmd, cwd = ROOT) {
   execSync(cmd, { cwd, stdio: 'inherit' });
 }
 
+// Detect when a native module's prebuilt .node file was compiled for a
+// different Node version (typical symptom of copying node_modules across PCs)
+// and auto-rebuild it. Without this, start.bat fails on first DB open with
+// "NODE_MODULE_VERSION X. This version of Node.js requires NODE_MODULE_VERSION Y".
+function ensureNativeOk(pkgDir, modName) {
+  try {
+    execSync(`node -e "require('${modName}')"`, { cwd: pkgDir, stdio: 'pipe' });
+  } catch (e) {
+    const msg = String(e.stderr || e.stdout || e.message || '');
+    if (!/NODE_MODULE_VERSION|ERR_DLOPEN_FAILED|was compiled against/i.test(msg)) {
+      throw e;
+    }
+    warn(
+      `偵測到 ${modName} 的原生模組與此電腦的 Node ${process.versions.node} 不相容` +
+      `（通常是從另一台電腦複製 node_modules 過來造成的）。正在自動重新編譯…`,
+    );
+    try {
+      run(`npm rebuild ${modName}`, pkgDir);
+    } catch {
+      warn('npm rebuild 失敗，改用完整重新安裝…');
+      run(`npm install --force ${modName}`, pkgDir);
+    }
+    // Re-probe — if it still fails, surface the original error to the user.
+    execSync(`node -e "require('${modName}')"`, { cwd: pkgDir, stdio: 'pipe' });
+    success(`${modName} 已重新編譯並可用。`);
+  }
+}
+
 // ────────────────────────────────────────
 // 步驟 1：檢查 Node.js 版本
 // ────────────────────────────────────────
@@ -74,12 +102,14 @@ run('npm install --prefer-offline 2>/dev/null || npm install', ROOT);
 
 log('  → 安裝後端依賴...', colors.yellow);
 run('npm install --prefer-offline 2>/dev/null || npm install', join(ROOT, 'backend'));
+ensureNativeOk(join(ROOT, 'backend'), 'better-sqlite3');
 
 log('  → 安裝前端依賴...', colors.yellow);
 run('npm install --prefer-offline 2>/dev/null || npm install', join(ROOT, 'frontend'));
 
 log('  → 安裝腳本依賴 (seed 工具)...', colors.yellow);
 run('npm install --prefer-offline 2>/dev/null || npm install', join(ROOT, 'scripts'));
+ensureNativeOk(join(ROOT, 'scripts'), 'better-sqlite3');
 
 success('所有依賴安裝完成！');
 

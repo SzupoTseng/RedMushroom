@@ -34,7 +34,14 @@ echo.
 node scripts/setup.mjs
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo  ❌ 安裝過程發生錯誤，請截圖以上訊息並回報。
+    echo  ❌ 安裝過程發生錯誤。
+    echo.
+    echo  最常見的原因是「從另一台電腦複製了整個專案資料夾」，
+    echo  造成 node_modules 內的原生模組與此電腦 Node 版本不符。
+    echo  解決方法：直接雙擊本資料夾的 reinstall.bat 重新安裝，
+    echo  完成後再雙擊 start.bat 啟動。
+    echo.
+    echo  如果問題仍未解決，請截圖上方訊息並回報。
     pause
     exit /b 1
 )
