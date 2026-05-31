@@ -18,6 +18,7 @@ interface UserRow {
   streak_days: number;
   max_streak: number;
   is_sen_mode: number;
+  question_level: number;
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
@@ -74,7 +75,8 @@ export async function login(req: Request, res: Response): Promise<void> {
   const db = getDb();
   const user = db.prepare(
     `SELECT user_id, username, password_hash, display_name, role, grade,
-            total_exp, reward_points, current_level, streak_days, max_streak, is_sen_mode
+            total_exp, reward_points, current_level, streak_days, max_streak, is_sen_mode,
+            question_level
      FROM users WHERE username = ?`
   ).get(username) as UserRow | undefined;
 
@@ -115,6 +117,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       streak_days: user.streak_days,
       max_streak: user.max_streak,
       is_sen_mode: user.is_sen_mode === 1,
+      question_level: user.question_level ?? 0,
     },
   });
 }
@@ -126,6 +129,7 @@ export function getMe(req: Request, res: Response): void {
   const user = db.prepare(
     `SELECT u.user_id, u.username, u.display_name, u.role, u.grade,
             u.total_exp, u.reward_points, u.current_level, u.streak_days, u.max_streak, u.is_sen_mode,
+            u.question_level,
             s.accuracy, s.stability, s.versatility, s.cognition, s.endurance, s.fluency
      FROM users u
      LEFT JOIN user_stats s ON s.user_id = u.user_id
@@ -141,28 +145,54 @@ export function getMe(req: Request, res: Response): void {
 }
 
 /**
- * PATCH /api/auth/me — 學生更新個人資料（目前只支援中文姓名 display_name）。
- * 限制：1–12 字，僅允許中文／英數字／空白。
+ * PATCH /api/auth/me — 學生更新個人資料。
+ * 接受任一欄位（皆 optional）：
+ *   - display_name: 1–12 字，僅中文 / 英數字 / 空白
+ *   - question_level: 0 或 1（出題模式：0=重複練習、1=多樣化）
  */
 export function updateMe(req: Request, res: Response): void {
   const db = getDb();
   const userId = req.user!.user_id;
-  const { display_name } = req.body as { display_name?: string };
+  const { display_name, question_level } = req.body as {
+    display_name?: string;
+    question_level?: number;
+  };
 
-  if (typeof display_name !== 'string') {
-    res.status(400).json({ error: '請提供 display_name' });
-    return;
+  const updates: string[] = [];
+  const params: (string | number)[] = [];
+  const response: Record<string, unknown> = { ok: true };
+
+  if (typeof display_name === 'string') {
+    const trimmed = display_name.trim();
+    if (trimmed.length < 1 || trimmed.length > 12) {
+      res.status(400).json({ error: '姓名長度需為 1–12 字' });
+      return;
+    }
+    if (!/^[一-鿿A-Za-z0-9 ]+$/.test(trimmed)) {
+      res.status(400).json({ error: '姓名只允許中文、英文、數字、空白' });
+      return;
+    }
+    updates.push('display_name = ?');
+    params.push(trimmed);
+    response.display_name = trimmed;
   }
-  const trimmed = display_name.trim();
-  if (trimmed.length < 1 || trimmed.length > 12) {
-    res.status(400).json({ error: '姓名長度需為 1–12 字' });
-    return;
+
+  if (typeof question_level === 'number') {
+    if (question_level !== 0 && question_level !== 1) {
+      res.status(400).json({ error: 'question_level 只允許 0 或 1' });
+      return;
+    }
+    updates.push('question_level = ?');
+    params.push(question_level);
+    response.question_level = question_level;
   }
-  if (!/^[一-鿿A-Za-z0-9 ]+$/.test(trimmed)) {
-    res.status(400).json({ error: '姓名只允許中文、英文、數字、空白' });
+
+  if (updates.length === 0) {
+    res.status(400).json({ error: '請至少提供一個可更新欄位' });
     return;
   }
 
-  db.prepare('UPDATE users SET display_name = ? WHERE user_id = ?').run(trimmed, userId);
-  res.json({ ok: true, display_name: trimmed });
+  params.push(userId);
+  db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE user_id = ?`).run(...params);
+  res.json(response);
 }

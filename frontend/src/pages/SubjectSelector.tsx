@@ -84,11 +84,21 @@ const THEORY_TYPES: { key: TheoryType; label: string; icon: string; desc: string
 ];
 
 export default function SubjectSelector() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, updateQuestionLevel } = useAuth();
   const { startQuiz, state } = useQuiz();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [loading, setLoading] = useState<TheoryType | null>(null);
+  const [savingLevel, setSavingLevel] = useState(false);
+
+  const currentLevel: 0 | 1 = (user?.question_level === 1 ? 1 : 0);
+  const handleLevelChange = async (lv: 0 | 1) => {
+    if (lv === currentLevel || savingLevel) return;
+    setSavingLevel(true);
+    try { await updateQuestionLevel(lv); }
+    catch (e) { console.error('updateQuestionLevel failed', e); }
+    finally { setSavingLevel(false); }
+  };
 
   // 每次回到主頁都重新取得最新分數（避免測驗後分數沒更新）
   useEffect(() => {
@@ -118,8 +128,38 @@ export default function SubjectSelector() {
             ? <p className="text-sm text-mushroom-500">🌟 輕鬆學習模式</p>
             : <p className="text-sm text-gray-500">{user?.display_name}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <BpmfFontSelector />
+          {/* 出題模式：重複練習(Lv0) vs 多樣化(Lv1)。Default Lv0 對 SEN / 低年級友善 */}
+          {user && (
+            <div
+              className="inline-flex rounded-xl border border-gray-200 text-xs overflow-hidden shadow-sm"
+              title={currentLevel === 0
+                ? '目前：重複練習（同題會反覆出現，適合熟練單一概念）'
+                : '目前：多樣化（每場題目最大化覆蓋整個題庫）'}
+            >
+              <button
+                type="button"
+                onClick={() => handleLevelChange(0)}
+                disabled={savingLevel}
+                className={`px-3 py-2 font-bold transition-colors ${
+                  currentLevel === 0 ? 'bg-mushroom-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                重複練習
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLevelChange(1)}
+                disabled={savingLevel}
+                className={`px-3 py-2 font-bold transition-colors border-l border-gray-200 ${
+                  currentLevel === 1 ? 'bg-mushroom-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                多樣化
+              </button>
+            </div>
+          )}
           <LanguageSwitcher />
           <button className="btn-secondary text-sm py-2 px-4" onClick={() => navigate('/dashboard')}>
             📊 {t('nav.dashboard')}
@@ -216,6 +256,54 @@ export default function SubjectSelector() {
           <div className="text-3xl mb-1">🍄</div>
           <div className="font-black text-gray-800">語詞快打</div>
           <div className="text-xs text-gray-500 mt-1">蘑菇射種子打恐龍、100 關</div>
+        </button>
+        <button
+          onClick={() => navigate('/idiom')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-amber-300 bg-amber-50"
+        >
+          <div className="text-3xl mb-1">💰</div>
+          <div className="font-black text-gray-800">一字千金</div>
+          <div className="text-xs text-gray-500 mt-1">成語猜缺字、倒數計時、繁體 580 題</div>
+        </button>
+        <button
+          onClick={() => navigate('/find-misuse')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-rose-300 bg-rose-50"
+        >
+          <div className="text-3xl mb-1">🔍</div>
+          <div className="font-black text-gray-800">一起找錯字</div>
+          <div className="text-xs text-gray-500 mt-1">成語同音字陷阱、田字格顯示、531 題</div>
+        </button>
+        <button
+          onClick={() => navigate('/poem-author')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-emerald-300 bg-emerald-50"
+        >
+          <div className="text-3xl mb-1">📜</div>
+          <div className="font-black text-gray-800">是誰寫的詩</div>
+          <div className="text-xs text-gray-500 mt-1">唐詩三百首、注音、猜作者、197 首</div>
+        </button>
+        <button
+          onClick={() => navigate('/sanzijing')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-indigo-300 bg-indigo-50"
+        >
+          <div className="text-3xl mb-1">📚</div>
+          <div className="font-black text-gray-800">三字經</div>
+          <div className="text-xs text-gray-500 mt-1">三字經接句、注音、4 選 1、379 題</div>
+        </button>
+        <button
+          onClick={() => navigate('/dizigui')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-teal-300 bg-teal-50"
+        >
+          <div className="text-3xl mb-1">📖</div>
+          <div className="font-black text-gray-800">弟子規</div>
+          <div className="text-xs text-gray-500 mt-1">弟子規接句、含章節、注音、359 題</div>
+        </button>
+        <button
+          onClick={() => navigate('/lunyu')}
+          className="card text-left transition-all hover:shadow-lg active:scale-[0.98] border-2 border-violet-300 bg-violet-50"
+        >
+          <div className="text-3xl mb-1">🎓</div>
+          <div className="font-black text-gray-800">論語</div>
+          <div className="text-xs text-gray-500 mt-1">論語接句、白話解釋、注音、2059 題</div>
         </button>
         <button
           onClick={() => navigate('/english-typing')}

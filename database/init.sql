@@ -30,6 +30,10 @@ CREATE TABLE IF NOT EXISTS users (
   class_id      TEXT,
   -- Stage 13: SEN 特教模式
   is_sen_mode   INTEGER NOT NULL DEFAULT 0,
+  -- Stage 15: 出題模式
+  --   0 = 重複練習模式（同題幹會反覆出現，適合 SEN / 低年級熟練單一概念）
+  --   1 = 多樣化模式（stem-aware LRU，最大化題庫覆蓋；適合一般 / 中高年級）
+  question_level INTEGER NOT NULL DEFAULT 0,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -56,6 +60,9 @@ CREATE TABLE IF NOT EXISTS questions (
   -- (nullable; absent → frontend falls back to font rendering)
   options_zhuyin TEXT,
   correct_answer TEXT   NOT NULL,
+  -- correct_answer_alt: 排句子題的替代正解（|-分隔多個）。例如「主詞A + 副詞 + 可逆動詞 + 主詞B」
+  -- 的句型，A/B 互換後依然通順，存進這裡讓 submitAnswer 也接受。
+  correct_answer_alt TEXT,
   explanation   TEXT    NOT NULL DEFAULT '',
   score         INTEGER NOT NULL DEFAULT 10,
   -- Stage 15B: i18n prompts

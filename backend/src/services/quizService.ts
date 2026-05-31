@@ -45,6 +45,34 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
+/**
+ * 把題目化簡成「題幹」字串：題目文字 + 正解文字。
+ * 同一題的多個變體（錯誤選項不同 / 位置不同）會產生同一個 stem，
+ * 用於 rotation 與 dedupe，避免同題的 16 個變體被當成 16 道不同的題。
+ */
+function computeStemKey(row: {
+  content: string;
+  options: string;
+  correct_answer: string;
+  question_type: string;
+}): string {
+  let contentText = row.content;
+  try {
+    const arr = JSON.parse(row.content) as Array<{ char?: string }>;
+    if (Array.isArray(arr)) contentText = arr.map((x) => x.char ?? '').join('');
+  } catch { /* keep raw */ }
+  let opts: Record<string, string> = {};
+  try {
+    const parsed = JSON.parse(row.options) as Record<string, string>;
+    if (parsed && typeof parsed === 'object') opts = parsed;
+  } catch { /* keep empty */ }
+  if (row.question_type === 'sorting') {
+    const order = (row.correct_answer || '').split(',').map((s) => s.trim()).filter(Boolean);
+    return contentText + '||' + order.map((k) => opts[k] ?? '').join('|');
+  }
+  return contentText + '||' + (opts[(row.correct_answer || '').trim()] ?? '');
+}
+
 export class QuizService {
   private db = getDb();
 
@@ -86,35 +114,35 @@ export class QuizService {
   }
 
   /**
-   * 移除選項+正解完全相同的重複題，用題庫中其他不重複的題補足。
-   * 「只換人名但選項相同」的句型題會被這裡過濾掉。
+   * 依「題幹 (stem)」去重：同一題的多個變體只保留一個，其他用同 (subject/theory/category)
+   * 中尚未出現過的題幹補足。題幹 = content 文字 + 正解文字。
+   * 這樣可以擋掉生成器自動展開的 16 個變體被湊在同一場 quiz 的狀況。
    */
-  private deduplicateByContent(ids: number[], seenIds: Set<number>): number[] {
+  private deduplicateByContent(ids: number[]): number[] {
     if (ids.length === 0) return ids;
     const db = this.db;
+    const stemMap = this.getStemMap();
     const ph = ids.map(() => '?').join(',');
     const rows = db
       .prepare(
-        `SELECT question_id, correct_answer, options, subject, theory_type, category_type
+        `SELECT question_id, subject, theory_type, category_type
          FROM questions WHERE question_id IN (${ph})`
       )
       .all(...ids) as Array<{
         question_id: number;
-        correct_answer: string;
-        options: string;
         subject: string;
         theory_type: string;
         category_type: string;
       }>;
 
-    const contentSeen = new Set<string>();
+    const stemSeen = new Set<string>();
     const kept: number[] = [];
     const dropped: typeof rows = [];
 
     for (const r of rows) {
-      const key = `${r.correct_answer}||${r.options}`;
-      if (!contentSeen.has(key)) {
-        contentSeen.add(key);
+      const stem = stemMap.get(r.question_id) ?? String(r.question_id);
+      if (!stemSeen.has(stem)) {
+        stemSeen.add(stem);
         kept.push(r.question_id);
       } else {
         dropped.push(r);
@@ -123,26 +151,24 @@ export class QuizService {
 
     if (dropped.length === 0) return kept;
 
-    // Fill gaps: pick from the same (theory, category, subject) with different content
-    const alreadyUsed = new Set([...ids]);
+    // Fill gaps: 從同 (subject/theory/category) 中挑一個 stem 還沒用過的題目補上
+    const alreadyUsed = new Set<number>(ids);
     for (const d of dropped) {
       const alternatives = db
         .prepare(
-          `SELECT question_id, correct_answer, options FROM questions
+          `SELECT question_id FROM questions
            WHERE subject = ? AND theory_type = ? AND category_type = ?
              AND question_id NOT IN (${ids.map(() => '?').join(',')})
-           ORDER BY RANDOM() LIMIT 30`
+           LIMIT 200`
         )
-        .all(d.subject, d.theory_type, d.category_type, ...ids) as Array<{
-          question_id: number; correct_answer: string; options: string;
-        }>;
+        .all(d.subject, d.theory_type, d.category_type, ...ids) as Array<{ question_id: number }>;
 
       let filled = false;
-      for (const alt of alternatives) {
+      for (const alt of shuffle([...alternatives])) {
         if (alreadyUsed.has(alt.question_id)) continue;
-        const key = `${alt.correct_answer}||${alt.options}`;
-        if (!contentSeen.has(key)) {
-          contentSeen.add(key);
+        const stem = stemMap.get(alt.question_id) ?? String(alt.question_id);
+        if (!stemSeen.has(stem)) {
+          stemSeen.add(stem);
           kept.push(alt.question_id);
           alreadyUsed.add(alt.question_id);
           filled = true;
@@ -150,7 +176,7 @@ export class QuizService {
         }
       }
       if (!filled) {
-        // No unique alternative found — just include the original to keep count
+        // 真的找不到同 category 不同 stem 的 → 退而求其次保留變體，至少湊滿題數
         kept.push(d.question_id);
       }
     }
@@ -159,20 +185,78 @@ export class QuizService {
   }
 
   /**
-   * 取得使用者最近 6 小時內已答過的題目 ID 集合，用於下一場抽題時排除。
-   * 「重複」由時間窗界定，而非永久——避免題庫被很快「打完」。
+   * 取得 question_id → stem_key 對照表（全表）。同一題的所有變體共享一個 stem。
+   * 5 分鐘 TTL，與其他快取一致；題庫變動後重啟 backend 即可立即更新。
    */
-  private getRecentlySeenIds(userId: number, hours = 6): Set<number> {
+  private stemMapCache: Map<number, string> | null = null;
+  private stemMapCacheAt = 0;
+  private getStemMap(): Map<number, string> {
+    const now = Date.now();
+    if (this.stemMapCache && now - this.stemMapCacheAt < CACHE_TTL_MS) {
+      return this.stemMapCache;
+    }
+    const rows = this.db
+      .prepare('SELECT question_id, content, options, correct_answer, question_type FROM questions')
+      .all() as Array<{
+        question_id: number; content: string; options: string;
+        correct_answer: string; question_type: string;
+      }>;
+    const map = new Map<number, string>();
+    for (const r of rows) map.set(r.question_id, computeStemKey(r));
+    this.stemMapCache = map;
+    this.stemMapCacheAt = now;
+    return map;
+  }
+
+  /**
+   * 取得使用者「每一個題幹 (stem)」歷來最後一次被出的時間（epoch 秒）。
+   * 把所有變體合併計算 — 出過 #315 等同出過整組 16 個 #315~#330 變體。
+   * 未曾被出過 → 不會出現在 Map 中（視為 0，最優先）。
+   */
+  private getLastServedMap(userId: number): Map<string, number> {
+    const stemMap = this.getStemMap();
     const rows = this.db
       .prepare(
-        `SELECT DISTINCT d.question_id
+        `SELECT d.question_id, MAX(strftime('%s', s.start_time)) AS last_ts
          FROM quiz_details d
          JOIN quiz_sessions s ON s.session_id = d.session_id
          WHERE s.user_id = ?
-           AND s.start_time >= datetime('now', '-' || ? || ' hours')`
+         GROUP BY d.question_id`
       )
-      .all(userId, hours) as Array<{ question_id: number }>;
-    return new Set(rows.map((r) => r.question_id));
+      .all(userId) as Array<{ question_id: number; last_ts: string | null }>;
+    const map = new Map<string, number>();
+    for (const r of rows) {
+      const stem = stemMap.get(r.question_id);
+      if (!stem) continue;
+      const ts = Number(r.last_ts) || 0;
+      const prev = map.get(stem) ?? 0;
+      if (ts > prev) map.set(stem, ts);
+    }
+    return map;
+  }
+
+  /**
+   * 把每個 category bucket 依「題幹最久沒出 / 從未出過」排序。
+   * 步驟：先 shuffle 製造隨機平手序，再用 stable sort 依 stemLastServed ASC 排序。
+   * 結果：從未出過題幹的題目排在前面（彼此隨機），其後是越早出過的題幹越前。
+   * pickDiverseQuestions 取 cursor 0 時就會優先吃到從未出過的題幹。
+   */
+  private rankBuckets(
+    buckets: Record<string, number[]>,
+    stemLastServed: Map<string, number>,
+  ): Record<string, number[]> {
+    const stemMap = this.getStemMap();
+    const out: Record<string, number[]> = {};
+    for (const [cat, ids] of Object.entries(buckets)) {
+      const randomized = shuffle([...ids]);
+      randomized.sort((a, b) => {
+        const sa = stemMap.get(a) ?? String(a);
+        const sb = stemMap.get(b) ?? String(b);
+        return (stemLastServed.get(sa) ?? 0) - (stemLastServed.get(sb) ?? 0);
+      });
+      out[cat] = randomized;
+    }
+    return out;
   }
 
   /**
@@ -214,13 +298,19 @@ export class QuizService {
   } {
     const db = this.db;
 
-    // 判斷 SEN 模式題數
+    // 讀使用者偏好：is_sen_mode 決定題數；question_level 決定抽題行為
+    //   question_level=0 「重複練習」：不做 stem 級 LRU、不做 stem dedupe；
+    //                    同題幹的多個變體會反覆出現 → 適合 SEN / 低年級重複熟練
+    //   question_level=1 「多樣化」：stem-aware LRU + stem dedupe + bucket shuffle；
+    //                    跨場最大化題庫覆蓋 → 適合一般 / 中高年級
     const user = db
-      .prepare('SELECT is_sen_mode FROM users WHERE user_id = ?')
-      .get(userId) as { is_sen_mode: number } | undefined;
+      .prepare('SELECT is_sen_mode, question_level FROM users WHERE user_id = ?')
+      .get(userId) as { is_sen_mode: number; question_level: number } | undefined;
     const questionCount = user?.is_sen_mode ? 5 : 10;
+    const isLv1 = user?.question_level === 1;
 
-    const seenIds = this.getRecentlySeenIds(userId, 6);
+    // Lv1 才需要計算「題幹級最近出題時間」做 LRU 排序
+    const stemLastServed = isLv1 ? this.getLastServedMap(userId) : new Map<string, number>();
 
     let selectedIds: number[];
 
@@ -241,15 +331,8 @@ export class QuizService {
         throw new Error(`排句子題庫不足：只有 ${totalAvail} 題，需要 ${questionCount} 題`);
       }
 
-      const fresh: Record<string, number[]> = {};
-      for (const [cat, ids] of Object.entries(buckets)) {
-        fresh[cat] = ids.filter((id) => !seenIds.has(id));
-      }
-      const freshTotal = Object.values(fresh).reduce((s, ids) => s + ids.length, 0);
-      selectedIds = this.pickDiverseQuestions(
-        freshTotal >= questionCount ? fresh : buckets,
-        questionCount
-      );
+      const useBuckets = isLv1 ? this.rankBuckets(buckets, stemLastServed) : buckets;
+      selectedIds = this.pickDiverseQuestions(useBuckets, questionCount);
     } else if (theoryType === 'mixed') {
       // 綜合練習：四個理論各取 2-3 題（SEN 各取 1-2），確保題目最多元。
       const theories = ['cognitive', 'input', 'usage', 'sociocultural'];
@@ -258,19 +341,14 @@ export class QuizService {
 
       for (const theory of theories) {
         const tb = this.getBucketsByCategory(subject, theory);
-        const freshBuckets: Record<string, number[]> = {};
-        for (const [cat, ids] of Object.entries(tb)) {
-          freshBuckets[cat] = ids.filter((id) => !seenIds.has(id));
-        }
-        const freshTotal = Object.values(freshBuckets).reduce((s, ids) => s + ids.length, 0);
-        const pool = freshTotal >= perTheory ? freshBuckets : tb;
-        allIds.push(...this.pickDiverseQuestions(pool, perTheory));
+        const useTb = isLv1 ? this.rankBuckets(tb, stemLastServed) : tb;
+        allIds.push(...this.pickDiverseQuestions(useTb, perTheory));
       }
 
       // Shuffle combined set, trim to exact count, ensure no dupes from rounding
       selectedIds = shuffle([...new Set(allIds)]).slice(0, questionCount);
 
-      // If short (edge case: very thin DB), fill from remaining theories without seenIds filter
+      // If short (edge case: very thin DB), fill from remaining theories ignoring ranking
       if (selectedIds.length < questionCount) {
         for (const theory of theories) {
           if (selectedIds.length >= questionCount) break;
@@ -285,18 +363,14 @@ export class QuizService {
       if (totalAvail < questionCount) {
         throw new Error(`題庫不足：${subject}/${theoryType} 只有 ${totalAvail} 題，需要 ${questionCount} 題`);
       }
-      const fresh: Record<string, number[]> = {};
-      for (const [cat, ids] of Object.entries(buckets)) {
-        fresh[cat] = ids.filter((id) => !seenIds.has(id));
-      }
-      const freshTotal = Object.values(fresh).reduce((s, ids) => s + ids.length, 0);
-      const useBuckets = freshTotal >= questionCount ? fresh : buckets;
+      const useBuckets = isLv1 ? this.rankBuckets(buckets, stemLastServed) : buckets;
       selectedIds = this.pickDiverseQuestions(useBuckets, questionCount);
     }
 
-    // 移除「選項+正解完全相同」的重複題（例如只換了人名但選項相同的句型題）。
-    // 優先保留已選的，用同一 category 的其他題補上缺口。
-    selectedIds = this.deduplicateByContent(selectedIds, seenIds);
+    // Lv1 才做 stem-level dedupe（同題幹只留一個）。Lv0 故意保留變體 → 重複練習。
+    if (isLv1) {
+      selectedIds = this.deduplicateByContent(selectedIds);
+    }
     const placeholders = selectedIds.map(() => '?').join(',');
     const questions = db
       .prepare(
@@ -362,13 +436,22 @@ export class QuizService {
     }
 
     const question = db
-      .prepare('SELECT correct_answer, explanation FROM questions WHERE question_id = ?')
-      .get(questionId) as { correct_answer: string; explanation: string } | undefined;
+      .prepare('SELECT correct_answer, correct_answer_alt, explanation FROM questions WHERE question_id = ?')
+      .get(questionId) as { correct_answer: string; correct_answer_alt: string | null; explanation: string } | undefined;
     if (!question) {
       throw new Error('找不到題目');
     }
 
-    const isCorrect = userAnswer.trim() === question.correct_answer.trim() ? 1 : 0;
+    const trimmedUser = userAnswer.trim();
+    const validAnswers = [question.correct_answer.trim()];
+    if (question.correct_answer_alt) {
+      // alt 以 | 分隔多個有效答案順序（例如「我陪同學」與「同學陪我」皆可接受）
+      for (const a of question.correct_answer_alt.split('|')) {
+        const t = a.trim();
+        if (t) validAnswers.push(t);
+      }
+    }
+    const isCorrect = validAnswers.includes(trimmedUser) ? 1 : 0;
 
     // UPDATE the pre-inserted placeholder row (written by startQuiz).
     // Use UPDATE rather than INSERT OR REPLACE to preserve the detail_id primary key.

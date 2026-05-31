@@ -86,7 +86,7 @@ export default function EnglishTypingGame() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           exp: gained,
-          reward: Math.max(1, Math.floor(gained / 2)),
+          reward: gained,
           source: 'english-typing',
         }),
       });

@@ -110,9 +110,6 @@ export default function WordTypingGame() {
       .catch((e) => setVocabError(e instanceof Error ? e.message : '載入失敗'));
   }, []);
 
-  // ── Score persist (per word and on level pass) ────────────────
-  // 後端 /api/quiz/game-score 期待 { exp, reward, source }，不是 { score, game_type }
-  // 這裡：每打中一個詞給 exp = gained（分數）+ reward = gained / 2（兌換分數）
   const saveScore = useCallback(async (gained: number, source: string) => {
     if (!token || gained <= 0) return;
     try {
@@ -121,7 +118,7 @@ export default function WordTypingGame() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           exp: gained,
-          reward: Math.max(1, Math.floor(gained / 2)),
+          reward: gained,
           source,
         }),
       });

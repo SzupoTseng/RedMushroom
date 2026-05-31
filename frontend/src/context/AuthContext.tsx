@@ -12,6 +12,7 @@ interface AuthContextValue {
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateDisplayName: (name: string) => Promise<void>;
+  updateQuestionLevel: (level: 0 | 1) => Promise<void>;
 }
 
 interface RegisterData {
@@ -126,8 +127,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser((prev) => (prev ? { ...prev, display_name: name.trim() } : prev));
   }, []);
 
+  // 更新出題模式（0 = 重複練習 / 1 = 多樣化）
+  const updateQuestionLevel = useCallback(async (level: 0 | 1) => {
+    const savedToken = localStorage.getItem(TOKEN_KEY);
+    if (!savedToken) throw new Error('尚未登入');
+    const res = await fetch('/api/auth/me', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${savedToken}`,
+      },
+      body: JSON.stringify({ question_level: level }),
+    });
+    if (!res.ok) {
+      const err = await res.json() as { error?: string };
+      throw new Error(err.error ?? '更新失敗');
+    }
+    setUser((prev) => (prev ? { ...prev, question_level: level } : prev));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser, updateDisplayName }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, refreshUser, updateDisplayName, updateQuestionLevel }}>
       {children}
     </AuthContext.Provider>
   );

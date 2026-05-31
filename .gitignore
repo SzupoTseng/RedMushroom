@@ -20,6 +20,20 @@ backend/public/reports/
 .tools/
 
 # ─────────────────────────────────────────
+# SCRAPE PIPELINE — downloaded third-party content + Python venv
+# ─────────────────────────────────────────
+# IP 風險：scripts/scrape/data/ 內含從學校官網下載的段考 PDF / 解析後的考題文字 /
+# 結構化題目。整批是第三方教材衍生品，不可上 git。需重跑時用 hub.py 系列腳本重產。
+scripts/scrape/data/
+# Python 虛擬環境（~144 MB，可由 README 指令重建）
+scripts/scrape/.venv/
+**/.venv/
+# Python 編譯快取
+__pycache__/
+*.pyc
+*.pyo
+
+# ─────────────────────────────────────────
 # DEPENDENCIES
 # ─────────────────────────────────────────
 node_modules/

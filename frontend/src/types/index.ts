@@ -11,6 +11,7 @@ export interface User {
   streak_days: number;
   max_streak: number;
   is_sen_mode: boolean;
+  question_level?: number;  // 0 = 重複練習模式（適合 SEN），1 = 多樣化模式
 }
 
 // ── 題目（前端收到，已無 correct_answer）──────

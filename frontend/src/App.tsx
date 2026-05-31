@@ -21,6 +21,12 @@ const Pvp                = lazy(() => import('./pages/Pvp'));
 const TypingGame         = lazy(() => import('./pages/TypingGame'));
 const WordTypingGame     = lazy(() => import('./pages/WordTypingGame'));
 const EnglishTypingGame  = lazy(() => import('./pages/EnglishTypingGame'));
+const IdiomGame          = lazy(() => import('./pages/IdiomGame'));
+const FindMisuse         = lazy(() => import('./pages/FindMisuse'));
+const PoemAuthorGame     = lazy(() => import('./pages/PoemAuthorGame'));
+const SanZiJingGame      = lazy(() => import('./pages/SanZiJingGame'));
+const DiziguiGame        = lazy(() => import('./pages/DiziguiGame'));
+const LunyuGame          = lazy(() => import('./pages/LunyuGame'));
 const ReadingTool        = lazy(() => import('./pages/ReadingTool'));
 const MathPracticeGen    = lazy(() => import('./pages/MathPracticeGenerator'));
 const WritingGrid        = lazy(() => import('./pages/WritingGrid'));
@@ -69,6 +75,12 @@ function AppRoutes() {
         <Route path="/typing-game" element={<TypingGame />} />
         <Route path="/word-typing" element={<WordTypingGame />} />
         <Route path="/english-typing" element={<EnglishTypingGame />} />
+        <Route path="/idiom" element={<IdiomGame />} />
+        <Route path="/find-misuse" element={<FindMisuse />} />
+        <Route path="/poem-author" element={<PoemAuthorGame />} />
+        <Route path="/sanzijing" element={<SanZiJingGame />} />
+        <Route path="/dizigui" element={<DiziguiGame />} />
+        <Route path="/lunyu" element={<LunyuGame />} />
         <Route path="/reading-tool" element={<ReadingTool />} />
         <Route path="/ext/math" element={<MathPracticeGen />} />
         <Route path="/ext/writing-grid" element={<WritingGrid />} />

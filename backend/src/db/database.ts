@@ -52,6 +52,13 @@ function runMigrations(db: Database.Database): void {
   // additive column migrations (mirror database/upgrade_schema.sql)
   ensureColumn('users', 'reward_points', 'reward_points INTEGER NOT NULL DEFAULT 0');
   ensureColumn('questions', 'options_zhuyin', 'options_zhuyin TEXT');
+  // question_level: 0 = 重複練習模式（同題幹會反覆出現，適合 SEN/低年級）
+  //                 1 = 多樣化模式（stem-aware LRU，最大化覆蓋）
+  ensureColumn('users', 'question_level', 'question_level INTEGER NOT NULL DEFAULT 0');
+  // correct_answer_alt: 排句子題的替代正解（|-分隔多個），例如
+  //   主詞A + 副詞 + 可逆動詞 + 主詞B 與 主詞B + 副詞 + 可逆動詞 + 主詞A 皆通順時，
+  //   correct_answer="1,2,3,4"、correct_answer_alt="4,2,3,1"
+  ensureColumn('questions', 'correct_answer_alt', 'correct_answer_alt TEXT');
 }
 
 export default getDb;
