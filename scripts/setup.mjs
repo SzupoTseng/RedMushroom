@@ -87,7 +87,19 @@ const nodeVersion = process.versions.node;
 const major = parseInt(nodeVersion.split('.')[0]);
 if (major < 18) {
   error(`需要 Node.js 18 以上，目前版本是 ${nodeVersion}`);
-  error('請前往 https://nodejs.org 下載最新版本，安裝後重新執行此腳本。');
+  error('請前往 https://nodejs.org/zh-tw 下載 LTS 版本（22.x），安裝後重新執行此腳本。');
+  process.exit(1);
+}
+// better-sqlite3 11.x ships prebuilds for Node 18 / 20 / 22 only. Node ≥24
+// forces a source compile (needs Python + VS Build Tools). On Windows we
+// surface a clear message; the start.bat shim is supposed to set up a portable
+// Node 22 before calling us, so end-users normally never see this. On other
+// platforms a source compile typically works fine (system Python), so allow it.
+if (major > 22 && process.platform === 'win32') {
+  error(`目前的 Node.js 版本 ${nodeVersion} 在 Windows 上太新，本專案的原生模組 (better-sqlite3) 沒有預編譯檔。`);
+  error('解法（任選其一）：');
+  error('  A. 雙擊 start.bat（會自動下載可攜版 Node 22 來用）');
+  error('  B. 自行安裝 Node 22 LTS：https://nodejs.org/zh-tw');
   process.exit(1);
 }
 success(`Node.js ${nodeVersion} ✓`);

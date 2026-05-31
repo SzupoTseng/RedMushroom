@@ -15,6 +15,10 @@ database/redmushroom.db
 *.pdf
 backend/public/reports/
 
+# Portable Node 22 downloaded by start.bat / reinstall.bat when the
+# system Node is too new for better-sqlite3 prebuilds. ~150 MB extracted.
+.tools/
+
 # ─────────────────────────────────────────
 # DEPENDENCIES
 # ─────────────────────────────────────────
