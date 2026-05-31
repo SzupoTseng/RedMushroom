@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 > nul
 title RedMushroom Dev
 cd /d "%~dp0"
 
