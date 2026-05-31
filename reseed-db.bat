@@ -11,6 +11,12 @@ REM  Double-click this file, or run:  reseed-db.bat
 REM ============================================================
 
 cd /d "%~dp0"
+
+REM Use portable Node 22 LTS if present (set up by start.bat / reinstall.bat).
+REM Without this, system Node 24+ would hit better-sqlite3 ABI mismatch
+REM (the prebuild was reinstalled for Node 22 by reinstall.bat).
+if exist ".tools\node22\node.exe" set "PATH=%CD%\.tools\node22;%PATH%"
+
 set "LOG=%~dp0reseed-db.log"
 
 echo.

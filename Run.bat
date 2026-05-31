@@ -2,6 +2,10 @@
 title RedMushroom Dev
 cd /d "%~dp0"
 
+REM Use portable Node 22 LTS if present (set up by start.bat / reinstall.bat).
+REM Without this, system Node 24+ would hit better-sqlite3 ABI mismatch.
+if exist ".tools\node22\node.exe" set "PATH=%CD%\.tools\node22;%PATH%"
+
 echo.
 echo  =============================================
 echo   RedMushroom Dev
