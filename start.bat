@@ -1,112 +1,116 @@
 @echo off
 chcp 65001 > nul
-title RedMushroom（紅蘑菇）啟動程式
+title RedMushroom
 cd /d "%~dp0"
-setlocal enabledelayedexpansion
 
 echo.
 echo  =============================================
-echo   🍄 RedMushroom（紅蘑菇）中文學習系統
+echo   RedMushroom (Hong Mo Gu) - Chinese Learning
 echo  =============================================
 echo.
 
-:: Check Node.js installed
+REM ---- Check Node installed ----
 where node >nul 2>nul
-if %ERRORLEVEL% NEQ 0 (
-    echo  ❌ 找不到 Node.js！
-    echo.
-    echo  請先安裝 Node.js LTS：
-    echo  https://nodejs.org/zh-tw
-    echo.
-    echo  安裝完畢後，請再次雙擊此檔案。
-    echo.
+if errorlevel 1 (
+    echo  [X] Node.js is NOT installed.
+    echo      Please install Node.js LTS from https://nodejs.org/zh-tw
+    echo      Then double-click this file again.
     pause
     start https://nodejs.org/zh-tw
     exit /b 1
 )
 
-:: ─────────────────────────────────────────────────────────────
-:: better-sqlite3 11.x only ships prebuilds for Node 18 / 20 / 22.
-:: If the system Node is too new (24+), set up portable Node 22 LTS
-:: into .\.tools\node22\ and prepend it to PATH so npm/tsx/node all
-:: see Node 22 for the install + runtime. Fully transparent to user.
-:: ─────────────────────────────────────────────────────────────
-for /f %%v in ('node -e "process.stdout.write(process.versions.node.split(^'.^')[0])"') do set NODE_MAJOR=%%v
+REM ---- Get Node major version into NODE_MAJOR ----
+for /f %%v in ('node -e "process.stdout.write(process.versions.node.split('.')[0])"') do set NODE_MAJOR=%%v
+echo  [i] Detected system Node major version: %NODE_MAJOR%
 
-if !NODE_MAJOR! GTR 22 (
-    if not exist ".tools\node22\node.exe" (
-        echo  ⚠  目前的 Node !NODE_MAJOR! 太新，正在自動下載並安裝可攜版 Node 22 LTS...
-        echo     （一次性 ~30MB，存放在 .\.tools\node22\）
-        if not exist ".tools" mkdir ".tools"
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -UseBasicParsing -Uri 'https://nodejs.org/dist/v22.13.1/node-v22.13.1-win-x64.zip' -OutFile '.tools\node22.zip'"
-        if errorlevel 1 goto :node22_fail
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Expand-Archive -Force '.tools\node22.zip' '.tools\'"
-        if errorlevel 1 goto :node22_fail
-        for /d %%d in (".tools\node-v22*-win-x64") do move "%%d" ".tools\node22" >nul
-        del ".tools\node22.zip" >nul 2>nul
-    )
-    if exist ".tools\node22\node.exe" (
-        set "PATH=%CD%\.tools\node22;!PATH!"
-        echo  ✅ 使用可攜版 Node:
-        node --version
-        echo.
-    )
+REM ---- If Node is too new for better-sqlite3 prebuilds, use portable Node 22 ----
+if %NODE_MAJOR% GTR 22 call :setup_portable_node22
+if errorlevel 1 (
+    echo.
+    echo  [X] Could not set up portable Node 22.
+    echo      Fallback: install Node 22 LTS manually from https://nodejs.org/zh-tw
+    pause
+    start https://nodejs.org/zh-tw
+    exit /b 1
 )
 
-echo  ✅ Node.js 已安裝
+echo  [OK] Node.js OK
 echo.
-
-echo  正在安裝並啟動 RedMushroom...
-echo  （首次執行可能需要 2-5 分鐘，請耐心等候）
+echo  Installing and starting RedMushroom...
+echo  (First run may take 2-5 minutes.)
 echo.
 
 call node scripts/setup.mjs
-if %ERRORLEVEL% NEQ 0 (
+if errorlevel 1 (
     echo.
-    echo  ⚠  安裝過程出問題，自動執行 reinstall.bat 清乾淨後重試一次...
+    echo  [!] setup.mjs failed. Auto-running reinstall.bat to recover...
     echo.
     call reinstall.bat
     if errorlevel 1 (
         echo.
-        echo  ❌ 自動修復仍然失敗。請截圖上方訊息回報。
-        echo     提示：常見原因是網路無法連到 nodejs.org / npm registry。
+        echo  [X] reinstall failed too. Please screenshot the messages above.
         pause
         exit /b 1
     )
     echo.
-    echo  → 重試 setup ...
+    echo  Retrying setup...
     call node scripts/setup.mjs
     if errorlevel 1 (
         echo.
-        echo  ❌ 重試後仍然失敗。請截圖上方訊息回報。
+        echo  [X] Setup still failed after reinstall. Please screenshot.
         pause
         exit /b 1
     )
 )
 
 echo.
-echo  正在啟動服務...
+echo  Starting service...
 start /B npm start
 
-:: 等待後端啟動
+REM Wait for backend to come up
 timeout /t 5 /nobreak > nul
 
-:: 開啟瀏覽器
+REM Open browser
 start http://localhost:5173
 
 echo.
-echo  🍄 RedMushroom 已啟動！
-echo  請在瀏覽器中使用，關閉此視窗會停止服務。
+echo  RedMushroom is running.
+echo  Use it in the browser. Closing this window stops the service.
 echo.
 pause
 exit /b 0
 
-:node22_fail
+
+REM =====================================================================
+REM Subroutine: set up portable Node 22 LTS in .\.tools\node22\
+REM Called when system Node is too new for better-sqlite3 prebuilds.
+REM Returns 0 on success (PATH updated), 1 on failure.
+REM =====================================================================
+:setup_portable_node22
 echo.
-echo  ❌ 無法自動下載 Node 22。可能是網路不通或防火牆擋住。
-echo     退路方案：請手動到 https://nodejs.org/zh-tw 下載 LTS 版本安裝，
-echo     再雙擊本檔案即可。
+echo  [!] Node %NODE_MAJOR% is too new for better-sqlite3 prebuilds.
+echo      Setting up portable Node 22 LTS in .\.tools\node22\
+echo      (one-time download, about 30 MB).
 echo.
-pause
-start https://nodejs.org/zh-tw
-exit /b 1
+
+if not exist ".tools" mkdir ".tools"
+if not exist ".tools\node22\node.exe" (
+    echo  Downloading Node 22 LTS from nodejs.org ...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -UseBasicParsing -Uri 'https://nodejs.org/dist/v22.13.1/node-v22.13.1-win-x64.zip' -OutFile '.tools\node22.zip'"
+    if errorlevel 1 exit /b 1
+
+    echo  Extracting...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force '.tools\node22.zip' '.tools\'"
+    if errorlevel 1 exit /b 1
+
+    for /d %%d in (".tools\node-v22*-win-x64") do move "%%d" ".tools\node22" >nul
+    del ".tools\node22.zip" >nul 2>nul
+)
+
+if not exist ".tools\node22\node.exe" exit /b 1
+
+set "PATH=%CD%\.tools\node22;%PATH%"
+echo  [OK] Using portable Node:
+node --version
+exit /b 0
