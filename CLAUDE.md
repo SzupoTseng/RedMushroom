@@ -77,3 +77,33 @@ cd frontend && npm run dev
 3. **跨 session IDOR**：用 user_A token 存取 user_B session → 403
 4. **SEN 模式**：`is_sen_mode=1` 時抽 5 題、`time_limit=null`、前端大字單欄
 5. **一鍵啟動**：雙擊 `start.bat` 全程自動完成
+
+## 9. Windows `.bat` 檔案規範（必查，不可省略）
+
+**寫入或修改任何 `.bat` 檔後，必須**用以下指令稽核每一個 `.bat`：
+
+```bash
+for f in *.bat; do
+  enc=$(file - < "$f")
+  nascii=$(python3 -c "print(sum(1 for b in open('$f','rb').read() if b>=128))")
+  chcp=$(head -3 "$f" | grep -c "chcp 65001")
+  echo "$f | $enc | nonAscii=$nascii | chcp=$chcp"
+done
+```
+
+每個 `.bat` 都必須通過：
+
+1. **行尾必須是 CRLF**（`file` 輸出含 `with CRLF line terminators`）
+   - `Write` 工具會存成 LF → 寫完一定要轉：
+     `python3 -c "import sys;[open(f,'wb').write(open(f,'rb').read().replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')) for f in sys.argv[1:]]" *.bat`
+   - 若是 LF，cmd 會把 `setlocal` / `for /f` / 多行區塊整片亂剖，可能完全無輸出。
+2. **若含非 ASCII（中文）字元，前三行必須有 `chcp 65001 > nul`**
+   - 否則繁體中文 Windows（預設 cp950/Big5）會把 UTF-8 中文位元組誤讀為命令分隔符，產生 `'nstall' 不是內部或外部命令` 之類錯誤。
+   - 若要更穩，整個檔案用純 ASCII 英文（zero non-ASCII bytes）。
+3. **不要在使用 `setlocal enabledelayedexpansion` 的同一段 `if (...)` 區塊裡，又設又讀同一個變數**
+   - 改用 `:label` 子程序（`call :foo` / `exit /b N`）就不需要 delayed expansion，避免 `!VAR!` 陷阱。
+4. **任何會跑 Node 的 `.bat`（reseed-db、Run、reinstall、start...）**：
+   開頭都要加 `if exist ".tools\node22\node.exe" set "PATH=%CD%\.tools\node22;%PATH%"`，
+   讓可攜版 Node 22 接管 PATH，避免系統 Node 24+ 觸發 `better-sqlite3` ABI 不符。
+
+**寫完即驗，驗完才回報「修好了」。** 過去多次因為跳過這一步，使用者拿到完全跑不動的 `.bat`。
